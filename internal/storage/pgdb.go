@@ -3,9 +3,14 @@ package storage
 import (
 	"context"
 	"database/sql"
+	"errors"
 
+	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v5/pgconn"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/sourcecd/gofermart/internal/cryptandsign"
+	"github.com/sourcecd/gofermart/internal/models"
+	"github.com/sourcecd/gofermart/internal/prjerrors"
 )
 
 type PgDB struct {
@@ -17,6 +22,9 @@ var (
 	checkSecurityKey = "SELECT COUNT (id) FROM security"
 	createSecureKey = "INSERT INTO security (seckey) VALUES ($1)"
 	getSecurityKey = "SELECT seckey FROM security"
+
+	createUserTable = "CREATE TABLE IF NOT EXISTS users (id BIGSERIAL, login VARCHAR(255) PRIMARY KEY, password VARCHAR(255))"
+	createUserRec = "INSERT INTO users (login, password) values ($1, $2) RETURNING id"
 )
 
 func NewDB(dsn string) (*PgDB, error) {
@@ -37,6 +45,9 @@ func (pg *PgDB) PopulateDB(ctx context.Context) error {
 	defer tx.Rollback()
 
 	if _, err := tx.ExecContext(ctx, createSecureTable); err != nil {
+		return err
+	}
+	if _, err := tx.ExecContext(ctx, createUserTable); err != nil {
 		return err
 	}
 
@@ -70,4 +81,17 @@ func (pg *PgDB) GetSecKey(ctx context.Context) (*string, error) {
 	}
 	
 	return &seckey, nil
+}
+
+func (pg *PgDB) RegisterUser(ctx context.Context, reg *models.RegisterUser) (*int, error) {
+	var id int
+	err := pg.db.QueryRowContext(ctx, createUserRec, reg.Login, reg.Password).Scan(&id)
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgerrcode.IsIntegrityConstraintViolation(pgErr.Code) {
+			return nil, prjerrors.ErrAlreadyExists
+		}
+		return nil, err
+	}
+	return &id, nil
 }
