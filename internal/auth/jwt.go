@@ -8,19 +8,19 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 )
 
-const TOKEN_EXP = 12 * time.Hour
+const tokenExp = 12 * time.Hour
 
 type Claims struct {
 	jwt.RegisteredClaims
 	UserID int
 }
 
-func GenJWT(userId int, secKey string) (*string, error) {
+func GenJWT(userID int, secKey string) (*string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(TOKEN_EXP)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(tokenExp)),
 		},
-		UserID: userId,
+		UserID: userID,
 	})
 	tokenString, err := token.SignedString([]byte(secKey))
 	if err != nil {
