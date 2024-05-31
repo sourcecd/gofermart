@@ -35,7 +35,7 @@ func checkRequestCreds(r *http.Request) (*string, error) {
 	return nil, errors.New("auth creds not found")
 }
 
-func registerUserParse(r *http.Request) (*models.RegisterUser, error){
+func registerUserParse(r *http.Request) (*models.RegisterUser, error) {
 	regUser := &models.RegisterUser{}
 	enc := json.NewDecoder(r.Body)
 	if err := enc.Decode(regUser); err != nil {
@@ -53,8 +53,8 @@ func registerUserParse(r *http.Request) (*models.RegisterUser, error){
 
 func SetTokenCookie(w http.ResponseWriter, token string) {
 	http.SetCookie(w, &http.Cookie{
-		Name: "Bearer",
-		Value: token,
+		Name:   "Bearer",
+		Value:  token,
 		MaxAge: cookieMaxAge,
 	})
 }

@@ -19,12 +19,12 @@ type PgDB struct {
 
 var (
 	createSecureTable = "CREATE TABLE IF NOT EXISTS security (id BIGSERIAL PRIMARY KEY, seckey VARCHAR(255))"
-	checkSecurityKey = "SELECT COUNT (id) FROM security"
-	createSecureKey = "INSERT INTO security (seckey) VALUES ($1)"
-	getSecurityKey = "SELECT seckey FROM security"
+	checkSecurityKey  = "SELECT COUNT (id) FROM security"
+	createSecureKey   = "INSERT INTO security (seckey) VALUES ($1)"
+	getSecurityKey    = "SELECT seckey FROM security"
 
 	createUserTable = "CREATE TABLE IF NOT EXISTS users (id BIGSERIAL, login VARCHAR(255) PRIMARY KEY, password VARCHAR(255))"
-	createUserRec = "INSERT INTO users (login, password) values ($1, $2) RETURNING id"
+	createUserRec   = "INSERT INTO users (login, password) values ($1, $2) RETURNING id"
 )
 
 func NewDB(dsn string) (*PgDB, error) {
@@ -79,7 +79,7 @@ func (pg *PgDB) GetSecKey(ctx context.Context) (*string, error) {
 	if err := row.Scan(&seckey); err != nil {
 		return nil, err
 	}
-	
+
 	return &seckey, nil
 }
 

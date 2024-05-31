@@ -11,8 +11,8 @@ import (
 const TOKEN_EXP = 12 * time.Hour
 
 type Claims struct {
-    jwt.RegisteredClaims
-    UserID int
+	jwt.RegisteredClaims
+	UserID int
 }
 
 func GenJWT(userId int, secKey string) (*string, error) {
@@ -31,20 +31,20 @@ func GenJWT(userId int, secKey string) (*string, error) {
 
 func ExtractJWT(tokenString string, secKey string) (*int, error) {
 	claims := &Claims{}
-    token, err := jwt.ParseWithClaims(tokenString, claims,
-    func(t *jwt.Token) (interface{}, error) {
-        if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
-            return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
-        }
-        return []byte(secKey), nil
-    })
-    if err != nil {
-        return nil, err
-    }
+	token, err := jwt.ParseWithClaims(tokenString, claims,
+		func(t *jwt.Token) (interface{}, error) {
+			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
+			}
+			return []byte(secKey), nil
+		})
+	if err != nil {
+		return nil, err
+	}
 
-    if !token.Valid {
-        return nil, errors.New("token is not valid")
-    }
+	if !token.Valid {
+		return nil, errors.New("token is not valid")
+	}
 
-    return &claims.UserID, nil
+	return &claims.UserID, nil
 }
