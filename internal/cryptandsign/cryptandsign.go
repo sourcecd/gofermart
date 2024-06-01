@@ -2,6 +2,7 @@ package cryptandsign
 
 import (
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/hex"
 )
 
@@ -12,4 +13,11 @@ func GenRandKey() (*string, error) {
 	}
 	encodedKey := hex.EncodeToString(key)
 	return &encodedKey, nil
+}
+
+func GetPassHash(password string) string {
+	h := sha256.New()
+	h.Write([]byte(password))
+	dst := h.Sum(nil)
+	return hex.EncodeToString(dst)
 }

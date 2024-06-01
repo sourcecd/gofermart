@@ -21,6 +21,12 @@ const (
 	cookieMaxAge = 43200
 )
 
+type handlers struct {
+	ctx    context.Context
+	seckey string
+	db     *storage.PgDB
+}
+
 func checkRequestCreds(r *http.Request) (*string, error) {
 	if ck, err := r.Cookie("Bearer"); err == nil {
 		return &ck.Value, nil
@@ -35,8 +41,8 @@ func checkRequestCreds(r *http.Request) (*string, error) {
 	return nil, errors.New("auth creds not found")
 }
 
-func registerUserParse(r *http.Request) (*models.RegisterUser, error) {
-	regUser := &models.RegisterUser{}
+func UserParse(r *http.Request) (*models.User, error) {
+	regUser := &models.User{}
 	enc := json.NewDecoder(r.Body)
 	if err := enc.Decode(regUser); err != nil {
 		return nil, errors.New("request json parse failed")
@@ -59,20 +65,27 @@ func SetTokenCookie(w http.ResponseWriter, token string) {
 	})
 }
 
-func register(ctx context.Context, seckey string, db *storage.PgDB) http.HandlerFunc {
+func checkContentType(r *http.Request) error {
+	if r.Header.Get("Content-Type") != "application/json" {
+		return errors.New("wrong content type")
+	}
+	return nil
+}
+
+func (h *handlers) registerUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Header.Get("Content-Type") != "application/json" {
-			http.Error(w, "wrong content type", http.StatusBadRequest)
+		if err := checkContentType(r); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
-		reg, err := registerUserParse(r)
+		reg, err := UserParse(r)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
-		id, err := db.RegisterUser(ctx, reg)
+		id, err := h.db.RegisterUser(h.ctx, reg)
 		if err != nil {
 			if errors.Is(err, prjerrors.ErrAlreadyExists) {
 				http.Error(w, err.Error(), http.StatusConflict)
@@ -82,7 +95,7 @@ func register(ctx context.Context, seckey string, db *storage.PgDB) http.Handler
 			return
 		}
 
-		token, err := auth.GenJWT(*id, seckey)
+		token, err := auth.GenJWT(*id, h.seckey)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -109,9 +122,45 @@ func register(ctx context.Context, seckey string, db *storage.PgDB) http.Handler
 	}
 }
 
-func webRouter(ctx context.Context, seckey string, db *storage.PgDB) *chi.Mux {
+func (h *handlers) authUser() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if err := checkContentType(r); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		user, err := UserParse(r)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		id, err := h.db.AuthUser(h.ctx, user)
+		if err != nil {
+			if errors.Is(err, prjerrors.ErrNotExists) {
+				http.Error(w, err.Error(), http.StatusUnauthorized)
+				return
+			}
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		token, err := auth.GenJWT(*id, h.seckey)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		SetTokenCookie(w, *token)
+
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(*token))
+	}
+}
+
+func webRouter(h *handlers) *chi.Mux {
 	mux := chi.NewRouter()
-	mux.Post("/api/user/register", register(ctx, seckey, db))
+	mux.Post("/api/user/register", h.registerUser())
+	mux.Post("/api/user/login", h.authUser())
 
 	return mux
 }
@@ -132,5 +181,11 @@ func Run(ctx context.Context, config *config.Config) {
 		log.Fatal(err)
 	}
 
-	http.ListenAndServe(":8080", webRouter(ctx, *seckey, db))
+	h := &handlers{
+		ctx:    ctx,
+		seckey: *seckey,
+		db:     db,
+	}
+
+	http.ListenAndServe(":8080", webRouter(h))
 }

@@ -25,6 +25,8 @@ var (
 
 	createUserTable = "CREATE TABLE IF NOT EXISTS users (id BIGSERIAL, login VARCHAR(255) PRIMARY KEY, password VARCHAR(255))"
 	createUserRec   = "INSERT INTO users (login, password) values ($1, $2) RETURNING id"
+
+	getUserRec = "SELECT id, login, password FROM users WHERE login=$1"
 )
 
 func NewDB(dsn string) (*PgDB, error) {
@@ -83,9 +85,9 @@ func (pg *PgDB) GetSecKey(ctx context.Context) (*string, error) {
 	return &seckey, nil
 }
 
-func (pg *PgDB) RegisterUser(ctx context.Context, reg *models.RegisterUser) (*int, error) {
+func (pg *PgDB) RegisterUser(ctx context.Context, reg *models.User) (*int, error) {
 	var id int
-	err := pg.db.QueryRowContext(ctx, createUserRec, reg.Login, reg.Password).Scan(&id)
+	err := pg.db.QueryRowContext(ctx, createUserRec, reg.Login, cryptandsign.GetPassHash(reg.Password)).Scan(&id)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgerrcode.IsIntegrityConstraintViolation(pgErr.Code) {
@@ -94,4 +96,23 @@ func (pg *PgDB) RegisterUser(ctx context.Context, reg *models.RegisterUser) (*in
 		return nil, err
 	}
 	return &id, nil
+}
+
+func (pg *PgDB) AuthUser(ctx context.Context, reg *models.User) (*int, error) {
+	var (
+		id int
+		login,
+		password string
+	)
+	row := pg.db.QueryRowContext(ctx, getUserRec, reg.Login)
+	if err := row.Scan(&id, &login, &password); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, prjerrors.ErrNotExists
+		}
+		return nil, err
+	}
+	if cryptandsign.GetPassHash(reg.Password) == password {
+		return &id, nil
+	}
+	return nil, prjerrors.ErrNotExists
 }
