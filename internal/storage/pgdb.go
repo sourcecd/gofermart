@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"time"
 
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -24,9 +25,13 @@ var (
 	getSecurityKey    = "SELECT seckey FROM security"
 
 	createUserTable = "CREATE TABLE IF NOT EXISTS users (id BIGSERIAL, login VARCHAR(255) PRIMARY KEY, password VARCHAR(255))"
-	createUserRec   = "INSERT INTO users (login, password) values ($1, $2) RETURNING id"
+	createUserRec   = "INSERT INTO users (login, password) VALUES ($1, $2) RETURNING id"
 
 	getUserRec = "SELECT id, login, password FROM users WHERE login=$1"
+
+	createOrdersTable = "CREATE TABLE IF NOT EXISTS orders (userid BIGINT, number BIGINT PRIMARY KEY, uploaded_at TIMESTAMPTZ)"
+	createOrderRec    = "INSERT INTO orders (userid, number, uploaded_at) VALUES ($1, $2, $3)"
+	checkOrderRec     = "SELECT userid FROM orders WHERE number=$1"
 )
 
 func NewDB(dsn string) (*PgDB, error) {
@@ -50,6 +55,9 @@ func (pg *PgDB) PopulateDB(ctx context.Context) error {
 		return err
 	}
 	if _, err := tx.ExecContext(ctx, createUserTable); err != nil {
+		return err
+	}
+	if _, err := tx.ExecContext(ctx, createOrdersTable); err != nil {
 		return err
 	}
 
@@ -115,4 +123,22 @@ func (pg *PgDB) AuthUser(ctx context.Context, reg *models.User) (*int, error) {
 		return &id, nil
 	}
 	return nil, prjerrors.ErrNotExists
+}
+
+func (pg *PgDB) CreateOrder(ctx context.Context, userid, orderid int) error {
+	var checkUserID int
+	if _, err := pg.db.ExecContext(ctx, createOrderRec, userid, orderid, time.Now()); err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgerrcode.IsIntegrityConstraintViolation(pgErr.Code) {
+			row := pg.db.QueryRowContext(ctx, checkOrderRec, orderid)
+			if err := row.Scan(&checkUserID); err != nil {
+				return err
+			}
+			if checkUserID == userid {
+				return prjerrors.ErrOrderAlreadyExists
+			}
+			return prjerrors.ErrOtherOrderAlreadyExists
+		}
+	}
+	return nil
 }

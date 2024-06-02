@@ -4,8 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/asaskevich/govalidator"
@@ -15,6 +18,8 @@ import (
 	"github.com/sourcecd/gofermart/internal/models"
 	"github.com/sourcecd/gofermart/internal/prjerrors"
 	"github.com/sourcecd/gofermart/internal/storage"
+
+	"github.com/theplant/luhn"
 )
 
 const (
@@ -65,8 +70,8 @@ func SetTokenCookie(w http.ResponseWriter, token string) {
 	})
 }
 
-func checkContentType(r *http.Request) error {
-	if r.Header.Get("Content-Type") != "application/json" {
+func checkContentType(r *http.Request, contentType string) error {
+	if r.Header.Get("Content-Type") != contentType {
 		return errors.New("wrong content type")
 	}
 	return nil
@@ -74,7 +79,7 @@ func checkContentType(r *http.Request) error {
 
 func (h *handlers) registerUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if err := checkContentType(r); err != nil {
+		if err := checkContentType(r, "application/json"); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
@@ -102,21 +107,6 @@ func (h *handlers) registerUser() http.HandlerFunc {
 		}
 		SetTokenCookie(w, *token)
 
-		//MOVE_TO_LOGIN
-		/*gettoken, err := checkRequestCreds(r)
-		if err != nil {
-			slog.Error(err.Error())
-			http.Error(w, "401 Unauthorized", http.StatusUnauthorized)
-			return
-		}*/
-
-		/*userid, err := auth.ExtractJWT(*gettoken, seckey)
-		if err != nil {
-			slog.Error(err.Error())
-			http.Error(w, "401 Unauthorized", http.StatusUnauthorized)
-			return
-		}*/
-
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(*token))
 	}
@@ -124,7 +114,7 @@ func (h *handlers) registerUser() http.HandlerFunc {
 
 func (h *handlers) authUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if err := checkContentType(r); err != nil {
+		if err := checkContentType(r, "application/json"); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
@@ -157,10 +147,62 @@ func (h *handlers) authUser() http.HandlerFunc {
 	}
 }
 
+func (h *handlers) orderRegister() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if err := checkContentType(r, "text/plain"); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		gettoken, err := checkRequestCreds(r)
+		if err != nil {
+			http.Error(w, "401 Unauthorized", http.StatusUnauthorized)
+			return
+		}
+		userid, err := auth.ExtractJWT(*gettoken, h.seckey)
+		if err != nil {
+			http.Error(w, "401 Unauthorized", http.StatusUnauthorized)
+			return
+		}
+
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		ordnum, err := strconv.Atoi(string(body))
+		if err != nil {
+			http.Error(w, "order number is not number", http.StatusBadRequest)
+			return
+		}
+		if !luhn.Valid(ordnum) {
+			http.Error(w, "luhn number is not valid", http.StatusUnprocessableEntity)
+			return
+		}
+
+		if err := h.db.CreateOrder(h.ctx, *userid, ordnum); err != nil {
+			if errors.Is(err, prjerrors.ErrOrderAlreadyExists) {
+				http.Error(w, err.Error(), http.StatusOK)
+				return
+			}
+			if errors.Is(err, prjerrors.ErrOtherOrderAlreadyExists) {
+				http.Error(w, err.Error(), http.StatusConflict)
+				return
+			}
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusAccepted)
+		w.Write([]byte(fmt.Sprint(ordnum)))
+	}
+}
+
 func webRouter(h *handlers) *chi.Mux {
 	mux := chi.NewRouter()
 	mux.Post("/api/user/register", h.registerUser())
 	mux.Post("/api/user/login", h.authUser())
+	mux.Post("/api/user/orders", h.orderRegister())
 
 	return mux
 }
