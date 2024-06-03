@@ -198,11 +198,45 @@ func (h *handlers) orderRegister() http.HandlerFunc {
 	}
 }
 
+func (h *handlers) ordersList() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		gettoken, err := checkRequestCreds(r)
+		if err != nil {
+			http.Error(w, "401 Unauthorized", http.StatusUnauthorized)
+			return
+		}
+		userid, err := auth.ExtractJWT(*gettoken, h.seckey)
+		if err != nil {
+			http.Error(w, "401 Unauthorized", http.StatusUnauthorized)
+			return
+		}
+		var orderList []models.Order
+		if err := h.db.ListOrders(h.ctx, *userid, &orderList); err != nil {
+			if errors.Is(err, prjerrors.ErrEmptyData) {
+				http.Error(w, err.Error(), http.StatusNoContent)
+				return
+			}
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		enc := json.NewEncoder(w)
+		enc.SetIndent("", "  ")
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		if err := enc.Encode(orderList); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+}
+
 func webRouter(h *handlers) *chi.Mux {
 	mux := chi.NewRouter()
 	mux.Post("/api/user/register", h.registerUser())
 	mux.Post("/api/user/login", h.authUser())
 	mux.Post("/api/user/orders", h.orderRegister())
+	mux.Get("/api/user/orders", h.ordersList())
 
 	return mux
 }

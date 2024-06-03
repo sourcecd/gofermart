@@ -32,6 +32,8 @@ var (
 	createOrdersTable = "CREATE TABLE IF NOT EXISTS orders (userid BIGINT, number BIGINT PRIMARY KEY, uploaded_at TIMESTAMPTZ)"
 	createOrderRec    = "INSERT INTO orders (userid, number, uploaded_at) VALUES ($1, $2, $3)"
 	checkOrderRec     = "SELECT userid FROM orders WHERE number=$1"
+
+	listOrders = "SELECT number, uploaded_at FROM orders WHERE userid=$1 ORDER BY uploaded_at DESC"
 )
 
 func NewDB(dsn string) (*PgDB, error) {
@@ -139,6 +141,38 @@ func (pg *PgDB) CreateOrder(ctx context.Context, userid, orderid int) error {
 			}
 			return prjerrors.ErrOtherOrderAlreadyExists
 		}
+	}
+	return nil
+}
+
+func (pg *PgDB) ListOrders(ctx context.Context, userid int, orderList *[]models.Order) error {
+	var (
+		number     int
+		uploadedAt time.Time
+
+		rowsCount int
+	)
+	rows, err := pg.db.QueryContext(ctx, listOrders, userid)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		if err := rows.Scan(&number, &uploadedAt); err != nil {
+			return err
+		}
+		*orderList = append(*orderList, models.Order{
+			Number:     number,
+			UploadedAt: uploadedAt.Format(time.RFC3339),
+		})
+		rowsCount++
+	}
+	if rows.Err() != nil {
+		return rows.Err()
+	}
+	if rowsCount == 0 {
+		return prjerrors.ErrEmptyData
 	}
 	return nil
 }
