@@ -34,6 +34,10 @@ var (
 	checkOrderRec     = "SELECT userid FROM orders WHERE number=$1"
 
 	listOrders = "SELECT number, uploaded_at FROM orders WHERE userid=$1 ORDER BY uploaded_at DESC"
+
+	//May be need use double pressision
+	createBalanceTable = "CREATE TABLE IF NOT EXISTS balance (userid BIGINT, current BIGINT, withdrawn BIGINT)"
+	checkBalance       = "SELECT current, withdrawn FROM balance WHERE userid=$1"
 )
 
 func NewDB(dsn string) (*PgDB, error) {
@@ -60,6 +64,9 @@ func (pg *PgDB) PopulateDB(ctx context.Context) error {
 		return err
 	}
 	if _, err := tx.ExecContext(ctx, createOrdersTable); err != nil {
+		return err
+	}
+	if _, err := tx.ExecContext(ctx, createBalanceTable); err != nil {
 		return err
 	}
 
@@ -174,5 +181,23 @@ func (pg *PgDB) ListOrders(ctx context.Context, userid int, orderList *[]models.
 	if rowsCount == 0 {
 		return prjerrors.ErrEmptyData
 	}
+	return nil
+}
+
+func (pg *PgDB) GetBalance(ctx context.Context, userid int, balance *models.Balance) error {
+	var (
+		current   int
+		withdrawn int
+	)
+	row := pg.db.QueryRowContext(ctx, checkBalance, userid)
+	if err := row.Scan(&current, &withdrawn); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			//may be need to create default balance rec
+			return nil
+		}
+		return err
+	}
+	balance.Current = current
+	balance.Withdrawn = withdrawn
 	return nil
 }

@@ -231,12 +231,42 @@ func (h *handlers) ordersList() http.HandlerFunc {
 	}
 }
 
+func (h *handlers) getBalance() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		gettoken, err := checkRequestCreds(r)
+		if err != nil {
+			http.Error(w, "401 Unauthorized", http.StatusUnauthorized)
+			return
+		}
+		userid, err := auth.ExtractJWT(*gettoken, h.seckey)
+		if err != nil {
+			http.Error(w, "401 Unauthorized", http.StatusUnauthorized)
+			return
+		}
+
+		var balance models.Balance
+		if err := h.db.GetBalance(h.ctx, *userid, &balance); err != nil {
+			return
+		}
+
+		enc := json.NewEncoder(w)
+		enc.SetIndent("", "  ")
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		if err := enc.Encode(balance); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+}
+
 func webRouter(h *handlers) *chi.Mux {
 	mux := chi.NewRouter()
 	mux.Post("/api/user/register", h.registerUser())
 	mux.Post("/api/user/login", h.authUser())
 	mux.Post("/api/user/orders", h.orderRegister())
 	mux.Get("/api/user/orders", h.ordersList())
+	mux.Get("/api/user/balance", h.getBalance())
 
 	return mux
 }
