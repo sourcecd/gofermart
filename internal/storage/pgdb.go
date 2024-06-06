@@ -36,8 +36,10 @@ var (
 	listOrders = "SELECT number, uploaded_at FROM orders WHERE userid=$1 ORDER BY uploaded_at DESC"
 
 	//May be need use double pressision
-	createBalanceTable = "CREATE TABLE IF NOT EXISTS balance (userid BIGINT, current BIGINT, withdrawn BIGINT)"
+	createBalanceTable = "CREATE TABLE IF NOT EXISTS balance (userid BIGINT PRIMARY KEY, current BIGINT CHECK (current >= 0), withdrawn BIGINT)"
 	checkBalance       = "SELECT current, withdrawn FROM balance WHERE userid=$1"
+
+	withdrawOp = "UPDATE balance SET current=(current - $1), withdrawn=(withdrawn + $1) WHERE userid=$2"
 )
 
 func NewDB(dsn string) (*PgDB, error) {
@@ -200,4 +202,28 @@ func (pg *PgDB) GetBalance(ctx context.Context, userid int, balance *models.Bala
 	balance.Current = current
 	balance.Withdrawn = withdrawn
 	return nil
+}
+
+func (pg *PgDB) Withdraw(ctx context.Context, userid int, withdraw *models.Withdraw) error {
+	tx, err := pg.db.Begin()
+	defer tx.Rollback()
+	if err != nil {
+		return err
+	}
+	res, err := tx.ExecContext(ctx, withdrawOp, withdraw.Sum, userid)
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgerrcode.IsIntegrityConstraintViolation(pgErr.Code) {
+			return prjerrors.ErrNotEnough
+		}
+		return err
+	}
+	r, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if r == 0 {
+		return prjerrors.ErrNotEnough
+	}
+	return tx.Commit()
 }

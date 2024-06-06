@@ -8,4 +8,5 @@ var (
 	ErrOrderAlreadyExists      = errors.New("order already exists")
 	ErrOtherOrderAlreadyExists = errors.New("order already exists another user")
 	ErrEmptyData               = errors.New("no content")
+	ErrNotEnough               = errors.New("not enought money")
 )

@@ -260,6 +260,52 @@ func (h *handlers) getBalance() http.HandlerFunc {
 	}
 }
 
+func (h *handlers) withdraw() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if err := checkContentType(r, "application/json"); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		gettoken, err := checkRequestCreds(r)
+		if err != nil {
+			http.Error(w, "401 Unauthorized", http.StatusUnauthorized)
+			return
+		}
+		userid, err := auth.ExtractJWT(*gettoken, h.seckey)
+		if err != nil {
+			http.Error(w, "401 Unauthorized", http.StatusUnauthorized)
+			return
+		}
+
+		var withdraw models.Withdraw
+		dec := json.NewDecoder(r.Body)
+		if err := dec.Decode(&withdraw); err != nil {
+			http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+			return
+		}
+		if !luhn.Valid(withdraw.Order) {
+			http.Error(w, "luhn number is not valid", http.StatusUnprocessableEntity)
+			return
+		}
+		if withdraw.Sum <= 0 {
+			http.Error(w, "wrong withdraw sum", http.StatusUnprocessableEntity)
+			return
+		}
+
+		if err := h.db.Withdraw(h.ctx, *userid, &withdraw); err != nil {
+			if errors.Is(err, prjerrors.ErrNotEnough) {
+				http.Error(w, err.Error(), http.StatusPaymentRequired)
+				return
+			}
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("\n"))
+	}
+}
+
 func webRouter(h *handlers) *chi.Mux {
 	mux := chi.NewRouter()
 	mux.Post("/api/user/register", h.registerUser())
@@ -267,6 +313,7 @@ func webRouter(h *handlers) *chi.Mux {
 	mux.Post("/api/user/orders", h.orderRegister())
 	mux.Get("/api/user/orders", h.ordersList())
 	mux.Get("/api/user/balance", h.getBalance())
+	mux.Post("/api/user/balance/withdraw", h.withdraw())
 
 	return mux
 }
