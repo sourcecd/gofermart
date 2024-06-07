@@ -263,7 +263,7 @@ func (pg *PgDB) Withdrawals(ctx context.Context, userid int64, withdrawals *[]mo
 		*withdrawals = append(*withdrawals, models.Withdrawals{
 			Order:       number,
 			Sum:         sum,
-			ProcessedAt: processedAt,
+			ProcessedAt: processedAt.Format(time.RFC3339),
 		})
 		rowsCount++
 	}
