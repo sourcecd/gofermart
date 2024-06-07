@@ -12,10 +12,10 @@ const tokenExp = 12 * time.Hour
 
 type Claims struct {
 	jwt.RegisteredClaims
-	UserID int
+	UserID int64
 }
 
-func GenJWT(userID int, secKey string) (*string, error) {
+func GenJWT(userID int64, secKey string) (*string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(tokenExp)),
@@ -29,7 +29,7 @@ func GenJWT(userID int, secKey string) (*string, error) {
 	return &tokenString, nil
 }
 
-func ExtractJWT(tokenString string, secKey string) (*int, error) {
+func ExtractJWT(tokenString string, secKey string) (*int64, error) {
 	claims := &Claims{}
 	token, err := jwt.ParseWithClaims(tokenString, claims,
 		func(t *jwt.Token) (interface{}, error) {

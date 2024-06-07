@@ -1,6 +1,6 @@
 package models
 
 type Withdraw struct {
-	Order int `json:"order"`
-	Sum   int `json:"sum"`
+	Order int64 `json:"order"`
+	Sum   int64 `json:"sum"`
 }

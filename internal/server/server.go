@@ -180,7 +180,7 @@ func (h *handlers) orderRegister() http.HandlerFunc {
 			return
 		}
 
-		if err := h.db.CreateOrder(h.ctx, *userid, ordnum); err != nil {
+		if err := h.db.CreateOrder(h.ctx, *userid, int64(ordnum)); err != nil {
 			if errors.Is(err, prjerrors.ErrOrderAlreadyExists) {
 				http.Error(w, err.Error(), http.StatusOK)
 				return
@@ -284,7 +284,7 @@ func (h *handlers) withdraw() http.HandlerFunc {
 			http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 			return
 		}
-		if !luhn.Valid(withdraw.Order) {
+		if !luhn.Valid(int(withdraw.Order)) {
 			http.Error(w, "luhn number is not valid", http.StatusUnprocessableEntity)
 			return
 		}
@@ -298,11 +298,49 @@ func (h *handlers) withdraw() http.HandlerFunc {
 				http.Error(w, err.Error(), http.StatusPaymentRequired)
 				return
 			}
+			if errors.Is(err, prjerrors.ErrOrderAlreadyExists) {
+				http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+				return
+			}
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("\n"))
+	}
+}
+
+func (h *handlers) withdrawals() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		gettoken, err := checkRequestCreds(r)
+		if err != nil {
+			http.Error(w, "401 Unauthorized", http.StatusUnauthorized)
+			return
+		}
+		userid, err := auth.ExtractJWT(*gettoken, h.seckey)
+		if err != nil {
+			http.Error(w, "401 Unauthorized", http.StatusUnauthorized)
+			return
+		}
+
+		var withdrawals []models.Withdrawals
+		if err := h.db.Withdrawals(h.ctx, *userid, &withdrawals); err != nil {
+			if errors.Is(err, prjerrors.ErrEmptyData) {
+				http.Error(w, err.Error(), http.StatusNoContent)
+				return
+			}
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		enc := json.NewEncoder(w)
+		enc.SetIndent("", "  ")
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		if err := enc.Encode(withdrawals); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}
 }
 
@@ -314,6 +352,7 @@ func webRouter(h *handlers) *chi.Mux {
 	mux.Get("/api/user/orders", h.ordersList())
 	mux.Get("/api/user/balance", h.getBalance())
 	mux.Post("/api/user/balance/withdraw", h.withdraw())
+	mux.Get("/api/user/withdrawals", h.withdrawals())
 
 	return mux
 }

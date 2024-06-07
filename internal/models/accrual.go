@@ -1,7 +1,7 @@
 package models
 
 type Accrual struct {
-	Order   int    `json:"order"`
+	Order   int64  `json:"order"`
 	Status  string `json:"status"`
-	Accrual *int   `json:"accrual,omitempty"`
+	Accrual *int64 `json:"accrual,omitempty"`
 }

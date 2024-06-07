@@ -29,17 +29,20 @@ var (
 
 	getUserRec = "SELECT id, login, password FROM users WHERE login=$1"
 
-	createOrdersTable = "CREATE TABLE IF NOT EXISTS orders (userid BIGINT, number BIGINT PRIMARY KEY, uploaded_at TIMESTAMPTZ)"
-	createOrderRec    = "INSERT INTO orders (userid, number, uploaded_at) VALUES ($1, $2, $3)"
+	createOrdersTable = "CREATE TABLE IF NOT EXISTS orders (userid BIGINT, number BIGINT PRIMARY KEY, uploaded_at TIMESTAMPTZ, status VARCHAR(255), accrual BIGINT, sum BIGINT, processed_at TIMESTAMPTZ, processable bool, processed bool)"
+	createOrderRec    = "INSERT INTO orders (userid, number, uploaded_at, processable, processed, status) VALUES ($1, $2, $3, $4, $5, 'NEW')"
 	checkOrderRec     = "SELECT userid FROM orders WHERE number=$1"
 
-	listOrders = "SELECT number, uploaded_at FROM orders WHERE userid=$1 ORDER BY uploaded_at DESC"
+	listOrders = "SELECT number, uploaded_at, status, accrual FROM orders WHERE (userid=$1 AND processable=true) ORDER BY uploaded_at DESC"
 
 	//May be need use double pressision
 	createBalanceTable = "CREATE TABLE IF NOT EXISTS balance (userid BIGINT PRIMARY KEY, current BIGINT CHECK (current >= 0), withdrawn BIGINT)"
 	checkBalance       = "SELECT current, withdrawn FROM balance WHERE userid=$1"
 
-	withdrawOp = "UPDATE balance SET current=(current - $1), withdrawn=(withdrawn + $1) WHERE userid=$2"
+	withdrawOp             = "UPDATE balance SET current=(current - $1), withdrawn=(withdrawn + $1) WHERE userid=$2"
+	createOrderRecWithdraw = "INSERT INTO orders (userid, number, sum, processed_at, processable) VALUES ($1, $2, $3, $4, $5)"
+
+	getWithdrawals = "SELECT number, sum, processed_at FROM orders WHERE (userid=$1 AND processable=false) ORDER BY processed_at DESC"
 )
 
 func NewDB(dsn string) (*PgDB, error) {
@@ -76,7 +79,7 @@ func (pg *PgDB) PopulateDB(ctx context.Context) error {
 }
 
 func (pg *PgDB) InitSecKey(ctx context.Context) error {
-	var count int
+	var count int64
 	row := pg.db.QueryRowContext(ctx, checkSecurityKey)
 	if err := row.Scan(&count); err != nil {
 		return err
@@ -104,8 +107,8 @@ func (pg *PgDB) GetSecKey(ctx context.Context) (*string, error) {
 	return &seckey, nil
 }
 
-func (pg *PgDB) RegisterUser(ctx context.Context, reg *models.User) (*int, error) {
-	var id int
+func (pg *PgDB) RegisterUser(ctx context.Context, reg *models.User) (*int64, error) {
+	var id int64
 	err := pg.db.QueryRowContext(ctx, createUserRec, reg.Login, cryptandsign.GetPassHash(reg.Password)).Scan(&id)
 	if err != nil {
 		var pgErr *pgconn.PgError
@@ -117,9 +120,9 @@ func (pg *PgDB) RegisterUser(ctx context.Context, reg *models.User) (*int, error
 	return &id, nil
 }
 
-func (pg *PgDB) AuthUser(ctx context.Context, reg *models.User) (*int, error) {
+func (pg *PgDB) AuthUser(ctx context.Context, reg *models.User) (*int64, error) {
 	var (
-		id int
+		id int64
 		login,
 		password string
 	)
@@ -136,9 +139,9 @@ func (pg *PgDB) AuthUser(ctx context.Context, reg *models.User) (*int, error) {
 	return nil, prjerrors.ErrNotExists
 }
 
-func (pg *PgDB) CreateOrder(ctx context.Context, userid, orderid int) error {
-	var checkUserID int
-	if _, err := pg.db.ExecContext(ctx, createOrderRec, userid, orderid, time.Now()); err != nil {
+func (pg *PgDB) CreateOrder(ctx context.Context, userid, orderid int64) error {
+	var checkUserID int64
+	if _, err := pg.db.ExecContext(ctx, createOrderRec, userid, orderid, time.Now(), true, false); err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgerrcode.IsIntegrityConstraintViolation(pgErr.Code) {
 			row := pg.db.QueryRowContext(ctx, checkOrderRec, orderid)
@@ -154,12 +157,14 @@ func (pg *PgDB) CreateOrder(ctx context.Context, userid, orderid int) error {
 	return nil
 }
 
-func (pg *PgDB) ListOrders(ctx context.Context, userid int, orderList *[]models.Order) error {
+func (pg *PgDB) ListOrders(ctx context.Context, userid int64, orderList *[]models.Order) error {
 	var (
-		number     int
+		number     int64
 		uploadedAt time.Time
+		status     string
+		accrual    sql.NullInt64
 
-		rowsCount int
+		rowsCount int64
 	)
 	rows, err := pg.db.QueryContext(ctx, listOrders, userid)
 	if err != nil {
@@ -168,12 +173,14 @@ func (pg *PgDB) ListOrders(ctx context.Context, userid int, orderList *[]models.
 	defer rows.Close()
 
 	for rows.Next() {
-		if err := rows.Scan(&number, &uploadedAt); err != nil {
+		if err := rows.Scan(&number, &uploadedAt, &status, &accrual); err != nil {
 			return err
 		}
 		*orderList = append(*orderList, models.Order{
 			Number:     number,
 			UploadedAt: uploadedAt.Format(time.RFC3339),
+			Status:     status,
+			Accrual:    accrual.Int64,
 		})
 		rowsCount++
 	}
@@ -186,10 +193,10 @@ func (pg *PgDB) ListOrders(ctx context.Context, userid int, orderList *[]models.
 	return nil
 }
 
-func (pg *PgDB) GetBalance(ctx context.Context, userid int, balance *models.Balance) error {
+func (pg *PgDB) GetBalance(ctx context.Context, userid int64, balance *models.Balance) error {
 	var (
-		current   int
-		withdrawn int
+		current   int64
+		withdrawn int64
 	)
 	row := pg.db.QueryRowContext(ctx, checkBalance, userid)
 	if err := row.Scan(&current, &withdrawn); err != nil {
@@ -204,7 +211,7 @@ func (pg *PgDB) GetBalance(ctx context.Context, userid int, balance *models.Bala
 	return nil
 }
 
-func (pg *PgDB) Withdraw(ctx context.Context, userid int, withdraw *models.Withdraw) error {
+func (pg *PgDB) Withdraw(ctx context.Context, userid int64, withdraw *models.Withdraw) error {
 	tx, err := pg.db.Begin()
 	defer tx.Rollback()
 	if err != nil {
@@ -225,5 +232,46 @@ func (pg *PgDB) Withdraw(ctx context.Context, userid int, withdraw *models.Withd
 	if r == 0 {
 		return prjerrors.ErrNotEnough
 	}
+	if _, err := tx.ExecContext(ctx, createOrderRecWithdraw, userid, withdraw.Order, withdraw.Sum, time.Now(), false); err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgerrcode.IsIntegrityConstraintViolation(pgErr.Code) {
+			return prjerrors.ErrOrderAlreadyExists
+		}
+		return err
+	}
 	return tx.Commit()
+}
+
+func (pg *PgDB) Withdrawals(ctx context.Context, userid int64, withdrawals *[]models.Withdrawals) error {
+	var (
+		number      int64
+		sum         int64
+		processedAt time.Time
+
+		rowsCount int64
+	)
+	rows, err := pg.db.QueryContext(ctx, getWithdrawals, userid)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		if err := rows.Scan(&number, &sum, &processedAt); err != nil {
+			return err
+		}
+		*withdrawals = append(*withdrawals, models.Withdrawals{
+			Order:       number,
+			Sum:         sum,
+			ProcessedAt: processedAt,
+		})
+		rowsCount++
+	}
+	if rows.Err() != nil {
+		return rows.Err()
+	}
+	if rowsCount == 0 {
+		return prjerrors.ErrEmptyData
+	}
+	return nil
 }
