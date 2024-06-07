@@ -357,8 +357,8 @@ func webRouter(h *handlers) *chi.Mux {
 	return mux
 }
 
-func Run(ctx context.Context, config *config.Config) {
-	db, err := storage.NewDB(config.Dsn)
+func Run(ctx context.Context, config config.Config) {
+	db, err := storage.NewDB(config.DatabaseDsn)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -379,5 +379,5 @@ func Run(ctx context.Context, config *config.Config) {
 		db:     db,
 	}
 
-	http.ListenAndServe(":8080", webRouter(h))
+	http.ListenAndServe(config.ServerAddr, webRouter(h))
 }

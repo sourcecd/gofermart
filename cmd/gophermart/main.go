@@ -9,9 +9,11 @@ import (
 
 func main() {
 	ctx := context.Background()
-	config := &config.Config{
-		Dsn: "host=localhost database=gofermart sslmode=disable",
-	}
+
+	var config config.Config
+
+	servFlags(&config)
+	servEnv(&config)
 
 	server.Run(ctx, config)
 }

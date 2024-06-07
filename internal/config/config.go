@@ -1,5 +1,7 @@
 package config
 
 type Config struct {
-	Dsn string
+	DatabaseDsn,
+	ServerAddr,
+	Accu string
 }
