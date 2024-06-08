@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"log/slog"
 	"os"
 	"strings"
 
@@ -13,7 +12,6 @@ func servEnv(config *config.Config) {
 	a := os.Getenv("RUN_ADDRESS")
 	d := os.Getenv("DATABASE_URI")
 	r := os.Getenv("ACCRUAL_SYSTEM_ADDRESS")
-	slog.Error(r)
 
 	if a != "" {
 		if len(strings.Split(a, ":")) == 2 {
@@ -24,7 +22,7 @@ func servEnv(config *config.Config) {
 		config.DatabaseDsn = d
 	}
 	if r != "" {
-		if len(strings.Split(r, ":")) == 2 {
+		if len(strings.Split(r, ":")) >= 2 {
 			config.Accu = r
 		}
 	}

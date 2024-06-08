@@ -372,7 +372,7 @@ func accuPoll(ctx context.Context, db *storage.PgDB, srv string) error {
 
 	for _, v := range orders {
 		var parsedOrders models.Accrual
-		resp, err := cl.Get(fmt.Sprintf("http://%s/api/orders/%d", srv, v))
+		resp, err := cl.Get(fmt.Sprintf("%s/api/orders/%d", srv, v))
 		if err != nil {
 			slog.Error(err.Error())
 			continue
