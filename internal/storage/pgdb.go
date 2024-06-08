@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log/slog"
+	"strconv"
 	"time"
 
 	"github.com/jackc/pgerrcode"
@@ -30,14 +32,14 @@ var (
 
 	getUserRec = "SELECT id, login, password FROM users WHERE login=$1"
 
-	createOrdersTable = "CREATE TABLE IF NOT EXISTS orders (userid BIGINT, number BIGINT PRIMARY KEY, uploaded_at TIMESTAMPTZ, status VARCHAR(255), accrual BIGINT, sum BIGINT, processed_at TIMESTAMPTZ, processable bool, processed bool)"
+	createOrdersTable = "CREATE TABLE IF NOT EXISTS orders (userid BIGINT, number BIGINT PRIMARY KEY, uploaded_at TIMESTAMPTZ, status VARCHAR(255), accrual DOUBLE PRECISION, sum DOUBLE PRECISION, processed_at TIMESTAMPTZ, processable bool, processed bool)"
 	createOrderRec    = "INSERT INTO orders (userid, number, uploaded_at, processable, processed, status) VALUES ($1, $2, $3, $4, $5, 'NEW')"
 	checkOrderRec     = "SELECT userid FROM orders WHERE number=$1"
 
 	listOrders = "SELECT number, uploaded_at, status, accrual FROM orders WHERE (userid=$1 AND processable=true) ORDER BY uploaded_at DESC"
 
 	//May be need use double pressision
-	createBalanceTable = "CREATE TABLE IF NOT EXISTS balance (userid BIGINT PRIMARY KEY, current BIGINT CHECK (current >= 0), withdrawn BIGINT)"
+	createBalanceTable = "CREATE TABLE IF NOT EXISTS balance (userid BIGINT PRIMARY KEY, current DOUBLE PRECISION CHECK (current >= 0), withdrawn DOUBLE PRECISION)"
 	checkBalance       = "SELECT current, withdrawn FROM balance WHERE userid=$1"
 
 	withdrawOp             = "UPDATE balance SET current=(current - $1), withdrawn=(withdrawn + $1) WHERE userid=$2"
@@ -166,7 +168,7 @@ func (pg *PgDB) ListOrders(ctx context.Context, userid int64, orderList *[]model
 		number     int64
 		uploadedAt time.Time
 		status     string
-		accrual    sql.NullInt64
+		accrual    sql.NullFloat64
 
 		rowsCount int64
 	)
@@ -184,7 +186,7 @@ func (pg *PgDB) ListOrders(ctx context.Context, userid int64, orderList *[]model
 			Number:     fmt.Sprint(number),
 			UploadedAt: uploadedAt.Format(time.RFC3339),
 			Status:     status,
-			Accrual:    accrual.Int64,
+			Accrual:    accrual.Float64,
 		})
 		rowsCount++
 	}
@@ -199,8 +201,8 @@ func (pg *PgDB) ListOrders(ctx context.Context, userid int64, orderList *[]model
 
 func (pg *PgDB) GetBalance(ctx context.Context, userid int64, balance *models.Balance) error {
 	var (
-		current   int64
-		withdrawn int64
+		current   float64
+		withdrawn float64
 	)
 	row := pg.db.QueryRowContext(ctx, checkBalance, userid)
 	if err := row.Scan(&current, &withdrawn); err != nil {
@@ -249,7 +251,7 @@ func (pg *PgDB) Withdraw(ctx context.Context, userid int64, withdraw *models.Wit
 func (pg *PgDB) Withdrawals(ctx context.Context, userid int64, withdrawals *[]models.Withdrawals) error {
 	var (
 		number      int64
-		sum         int64
+		sum         float64
 		processedAt time.Time
 
 		rowsCount int64
@@ -308,7 +310,11 @@ func (pg *PgDB) AccuSave(ctx context.Context, accrual []models.Accrual) error {
 	defer tx.Rollback()
 
 	for _, v := range accrual {
-		if _, err := tx.ExecContext(ctx, accuUpdate, v.Status, v.Accrual, v.Order); err != nil {
+		i, err := strconv.Atoi(v.Order)
+		if err != nil {
+			slog.Error(err.Error())
+		}
+		if _, err := tx.ExecContext(ctx, accuUpdate, v.Status, v.Accrual, i); err != nil {
 			return err
 		}
 	}
