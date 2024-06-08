@@ -272,7 +272,7 @@ func (pg *PgDB) Withdrawals(ctx context.Context, userid int64, withdrawals *[]mo
 			return err
 		}
 		*withdrawals = append(*withdrawals, models.Withdrawals{
-			Order:       number,
+			Order:       fmt.Sprint(number),
 			Sum:         sum,
 			ProcessedAt: processedAt.Format(time.RFC3339),
 		})
