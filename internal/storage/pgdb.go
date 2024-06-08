@@ -327,6 +327,7 @@ func (pg *PgDB) AccuSave(ctx context.Context, accrual []models.Accrual) error {
 			if _, err := tx.ExecContext(ctx, accuBalance, v.Accrual, userid); err != nil {
 				return err
 			}
+			slog.Error(fmt.Sprintf("%d, %f", userid, *v.Accrual))
 		case "PROCESSING":
 			if _, err := tx.ExecContext(ctx, accuUpdate, v.Status, v.Accrual, false, num); err != nil {
 				return err
