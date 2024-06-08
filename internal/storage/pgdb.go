@@ -239,7 +239,11 @@ func (pg *PgDB) Withdraw(ctx context.Context, userid int64, withdraw *models.Wit
 	if r == 0 {
 		return prjerrors.ErrNotEnough
 	}
-	if _, err := tx.ExecContext(ctx, createOrderRecWithdraw, userid, withdraw.Order, withdraw.Sum, time.Now(), false); err != nil {
+	num, err := strconv.Atoi(withdraw.Order)
+	if err != nil {
+		return err
+	}
+	if _, err := tx.ExecContext(ctx, createOrderRecWithdraw, userid, num, withdraw.Sum, time.Now(), false); err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgerrcode.IsIntegrityConstraintViolation(pgErr.Code) {
 			return prjerrors.ErrOrderAlreadyExists

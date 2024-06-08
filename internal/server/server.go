@@ -288,7 +288,12 @@ func (h *handlers) withdraw() http.HandlerFunc {
 			http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 			return
 		}
-		if !luhn.Valid(int(withdraw.Order)) {
+		num, err := strconv.Atoi(withdraw.Order)
+		if err != nil {
+			http.Error(w, "number is not valid", http.StatusUnprocessableEntity)
+			return
+		}
+		if !luhn.Valid(num) {
 			http.Error(w, "luhn number is not valid", http.StatusUnprocessableEntity)
 			return
 		}
