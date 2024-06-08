@@ -49,7 +49,7 @@ var (
 
 	accuPollReq = "SELECT number FROM orders WHERE (processable=true AND processed=false)"
 	accuUpdate  = "UPDATE orders SET status=$1, accrual=$2, processed=$3 WHERE number=$4"
-	accuBalance = "UPDATE balance SET current=(current + $1) WHERE userid=$2"
+	accuBalance = "INSERT INTO balance (userid, current, withdrawn) VALUES ($2, $1, 0) ON CONFLICT (userid) DO UPDATE SET current=(current + $1)"
 )
 
 func NewDB(dsn string) (*PgDB, error) {
@@ -327,7 +327,6 @@ func (pg *PgDB) AccuSave(ctx context.Context, accrual []models.Accrual) error {
 			if _, err := tx.ExecContext(ctx, accuBalance, v.Accrual, userid); err != nil {
 				return err
 			}
-			slog.Error(fmt.Sprintf("%d, %f", userid, *v.Accrual))
 		case "PROCESSING":
 			if _, err := tx.ExecContext(ctx, accuUpdate, v.Status, v.Accrual, false, num); err != nil {
 				return err
