@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"log"
+	"log/slog"
 
 	"github.com/sourcecd/gofermart/internal/config"
 	"github.com/sourcecd/gofermart/internal/server"
@@ -16,7 +16,7 @@ func main() {
 	servFlags(&config)
 	servEnv(&config)
 
-	log.Fatal(config.Accu)
+	slog.Error(config.Accu)
 
 	server.Run(ctx, config)
 }
