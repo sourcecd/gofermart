@@ -7,12 +7,15 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/asaskevich/govalidator"
 	"github.com/go-chi/chi/v5"
+	"github.com/go-resty/resty/v2"
 	"github.com/sourcecd/gofermart/internal/auth"
 	"github.com/sourcecd/gofermart/internal/config"
 	"github.com/sourcecd/gofermart/internal/models"
@@ -24,6 +27,7 @@ import (
 
 const (
 	cookieMaxAge = 43200
+	pollInterval = 5
 )
 
 type handlers struct {
@@ -357,6 +361,49 @@ func webRouter(h *handlers) *chi.Mux {
 	return mux
 }
 
+func accuPoll(ctx context.Context, db *storage.PgDB, srv string) error {
+	cl := resty.New().R()
+	var orders []int64
+	var listParsedOrders []models.Accrual
+
+	if err := db.AccuPoll(ctx, &orders); err != nil {
+		return err
+	}
+
+	for _, v := range orders {
+		var parsedOrders models.Accrual
+		resp, err := cl.Get(fmt.Sprintf("%s/api/orders/%d", srv, v))
+		if err != nil {
+			slog.Error(err.Error())
+			continue
+		}
+		switch resp.StatusCode() {
+		case http.StatusNoContent:
+			continue
+		case http.StatusTooManyRequests:
+			hdr := resp.Header().Get("Retry-After")
+			if hdr != "" {
+				i, err := strconv.Atoi(hdr)
+				if err != nil {
+					time.Sleep(pollInterval * time.Second)
+				}
+				time.Sleep(time.Duration(i) * time.Second)
+			}
+		case http.StatusInternalServerError:
+			return errors.New("unknown error")
+		}
+		if err := json.Unmarshal(resp.Body(), &parsedOrders); err != nil {
+			slog.Error(err.Error())
+			continue
+		}
+		listParsedOrders = append(listParsedOrders, parsedOrders)
+	}
+	if err := db.AccuSave(ctx, listParsedOrders); err != nil {
+		return err
+	}
+	return nil
+}
+
 func Run(ctx context.Context, config config.Config) {
 	db, err := storage.NewDB(config.DatabaseDsn)
 	if err != nil {
@@ -378,6 +425,13 @@ func Run(ctx context.Context, config config.Config) {
 		seckey: *seckey,
 		db:     db,
 	}
+
+	go func() {
+		if err := accuPoll(ctx, db, config.Accu); err != nil {
+			slog.Error(err.Error())
+		}
+		time.Sleep(pollInterval * time.Second)
+	}()
 
 	http.ListenAndServe(config.ServerAddr, webRouter(h))
 }

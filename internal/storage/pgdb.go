@@ -44,6 +44,9 @@ var (
 	createOrderRecWithdraw = "INSERT INTO orders (userid, number, sum, processed_at, processable) VALUES ($1, $2, $3, $4, $5)"
 
 	getWithdrawals = "SELECT number, sum, processed_at FROM orders WHERE (userid=$1 AND processable=false) ORDER BY processed_at DESC"
+
+	accuPollReq = "SELECT number FROM orders WHERE (processable=true AND processed=false)"
+	accuUpdate  = "UPDATE orders SET status=$1, accrual=$2, processed=true WHERE number=$3"
 )
 
 func NewDB(dsn string) (*PgDB, error) {
@@ -275,4 +278,39 @@ func (pg *PgDB) Withdrawals(ctx context.Context, userid int64, withdrawals *[]mo
 		return prjerrors.ErrEmptyData
 	}
 	return nil
+}
+
+func (pg *PgDB) AccuPoll(ctx context.Context, orders *[]int64) error {
+	var number int64
+	rows, err := pg.db.QueryContext(ctx, accuPollReq)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		if err := rows.Scan(&number); err != nil {
+			return err
+		}
+		*orders = append(*orders, number)
+	}
+	if rows.Err() != nil {
+		return rows.Err()
+	}
+	return nil
+}
+
+func (pg *PgDB) AccuSave(ctx context.Context, accrual []models.Accrual) error {
+	tx, err := pg.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	for _, v := range accrual {
+		if _, err := tx.ExecContext(ctx, accuUpdate, v.Status, v.Accrual, v.Order); err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
 }
