@@ -27,7 +27,7 @@ import (
 
 const (
 	cookieMaxAge = 43200
-	pollInterval = 5
+	pollInterval = 1
 )
 
 type handlers struct {
