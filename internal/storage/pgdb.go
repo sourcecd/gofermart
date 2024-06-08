@@ -48,7 +48,8 @@ var (
 	getWithdrawals = "SELECT number, sum, processed_at FROM orders WHERE (userid=$1 AND processable=false) ORDER BY processed_at DESC"
 
 	accuPollReq = "SELECT number FROM orders WHERE (processable=true AND processed=false)"
-	accuUpdate  = "UPDATE orders SET status=$1, accrual=$2, processed=true WHERE number=$3"
+	accuUpdate  = "UPDATE orders SET status=$1, accrual=$2, processed=$3 WHERE number=$4"
+	accuBalance = "UPDATE balance SET current=(current + $1) WHERE userid=$2"
 )
 
 func NewDB(dsn string) (*PgDB, error) {
@@ -310,12 +311,34 @@ func (pg *PgDB) AccuSave(ctx context.Context, accrual []models.Accrual) error {
 	defer tx.Rollback()
 
 	for _, v := range accrual {
-		i, err := strconv.Atoi(v.Order)
+		num, err := strconv.Atoi(v.Order)
 		if err != nil {
 			slog.Error(err.Error())
 		}
-		if _, err := tx.ExecContext(ctx, accuUpdate, v.Status, v.Accrual, i); err != nil {
-			return err
+		switch v.Status {
+		case "PROCESSED":
+			var userid int64
+			if _, err := tx.ExecContext(ctx, accuUpdate, v.Status, v.Accrual, true, num); err != nil {
+				return err
+			}
+			if err := pg.db.QueryRowContext(ctx, checkOrderRec, num).Scan(&userid); err != nil {
+				return err
+			}
+			if _, err := tx.ExecContext(ctx, accuBalance, v.Accrual, userid); err != nil {
+				return err
+			}
+		case "PROCESSING":
+			if _, err := tx.ExecContext(ctx, accuUpdate, v.Status, v.Accrual, false, num); err != nil {
+				return err
+			}
+		case "INVALID":
+			if _, err := tx.ExecContext(ctx, accuUpdate, v.Status, v.Accrual, true, num); err != nil {
+				return err
+			}
+		case "REGISTERED":
+			if _, err := tx.ExecContext(ctx, accuUpdate, v.Status, v.Accrual, false, num); err != nil {
+				return err
+			}
 		}
 	}
 	return tx.Commit()
