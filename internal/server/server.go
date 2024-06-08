@@ -362,7 +362,6 @@ func webRouter(h *handlers) *chi.Mux {
 }
 
 func accuPoll(ctx context.Context, db *storage.PgDB, srv string) error {
-	slog.Error("Tests NOT work")
 	cl := resty.New().R()
 	var orders []int64
 	var listParsedOrders []models.Accrual
@@ -428,10 +427,12 @@ func Run(ctx context.Context, config config.Config) {
 	}
 
 	go func() {
-		if err := accuPoll(ctx, db, config.Accu); err != nil {
-			slog.Error(err.Error())
+		for {
+			if err := accuPoll(ctx, db, config.Accu); err != nil {
+				slog.Error(err.Error())
+			}
+			time.Sleep(pollInterval * time.Second)
 		}
-		time.Sleep(pollInterval * time.Second)
 	}()
 
 	http.ListenAndServe(config.ServerAddr, webRouter(h))
