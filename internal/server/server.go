@@ -362,6 +362,7 @@ func webRouter(h *handlers) *chi.Mux {
 }
 
 func accuPoll(ctx context.Context, db *storage.PgDB, srv string) error {
+	slog.Error("Tests NOT work")
 	cl := resty.New().R()
 	var orders []int64
 	var listParsedOrders []models.Accrual
