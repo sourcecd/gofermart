@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/jackc/pgerrcode"
@@ -177,7 +178,7 @@ func (pg *PgDB) ListOrders(ctx context.Context, userid int64, orderList *[]model
 			return err
 		}
 		*orderList = append(*orderList, models.Order{
-			Number:     number,
+			Number:     fmt.Sprint(number),
 			UploadedAt: uploadedAt.Format(time.RFC3339),
 			Status:     status,
 			Accrual:    accrual.Int64,
