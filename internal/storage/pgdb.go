@@ -49,7 +49,7 @@ var (
 
 	accuPollReq = "SELECT number FROM orders WHERE (processable=true AND processed=false)"
 	accuUpdate  = "UPDATE orders SET status=$1, accrual=$2, processed=$3 WHERE number=$4"
-	accuBalance = "INSERT INTO balance (userid, current, withdrawn) VALUES ($2, $1, 0) ON CONFLICT (userid) DO UPDATE SET current=(current + $1)"
+	accuBalance = "INSERT INTO balance (userid, current, withdrawn) VALUES ($2, $1, 0) ON CONFLICT (userid) DO UPDATE SET current=(balance.current + $1)"
 )
 
 func NewDB(dsn string) (*PgDB, error) {
