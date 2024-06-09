@@ -17,6 +17,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-resty/resty/v2"
 	"github.com/sourcecd/gofermart/internal/auth"
+	"github.com/sourcecd/gofermart/internal/compression"
 	"github.com/sourcecd/gofermart/internal/config"
 	"github.com/sourcecd/gofermart/internal/models"
 	"github.com/sourcecd/gofermart/internal/prjerrors"
@@ -355,13 +356,13 @@ func (h *handlers) withdrawals() http.HandlerFunc {
 
 func webRouter(h *handlers) *chi.Mux {
 	mux := chi.NewRouter()
-	mux.Post("/api/user/register", h.registerUser())
-	mux.Post("/api/user/login", h.authUser())
-	mux.Post("/api/user/orders", h.orderRegister())
-	mux.Get("/api/user/orders", h.ordersList())
-	mux.Get("/api/user/balance", h.getBalance())
-	mux.Post("/api/user/balance/withdraw", h.withdraw())
-	mux.Get("/api/user/withdrawals", h.withdrawals())
+	mux.Post("/api/user/register", compression.GzipCompDecomp(h.registerUser()))
+	mux.Post("/api/user/login", compression.GzipCompDecomp(h.authUser()))
+	mux.Post("/api/user/orders", compression.GzipCompDecomp(h.orderRegister()))
+	mux.Get("/api/user/orders", compression.GzipCompDecomp(h.ordersList()))
+	mux.Get("/api/user/balance", compression.GzipCompDecomp(h.getBalance()))
+	mux.Post("/api/user/balance/withdraw", compression.GzipCompDecomp(h.withdraw()))
+	mux.Get("/api/user/withdrawals", compression.GzipCompDecomp(h.withdrawals()))
 
 	return mux
 }
