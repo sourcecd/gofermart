@@ -23,13 +23,15 @@ import (
 	"github.com/sourcecd/gofermart/internal/models"
 	"github.com/sourcecd/gofermart/internal/prjerrors"
 	"github.com/sourcecd/gofermart/internal/storage"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/theplant/luhn"
 )
 
 const (
-	cookieMaxAge = 43200
-	pollInterval = 1
+	cookieMaxAge       = 43200
+	pollInterval       = 1
+	serverShutdownTime = 10
 )
 
 type handlers struct {
@@ -397,7 +399,8 @@ func accuPoll(ctx context.Context, db *storage.PgDB, srv string) error {
 				time.Sleep(time.Duration(i) * time.Second)
 			}
 		case http.StatusInternalServerError:
-			return errors.New("unknown error")
+			slog.Error("unknown error: 500")
+			continue
 		}
 		if err := json.Unmarshal(resp.Body(), &parsedOrders); err != nil {
 			slog.Error(err.Error())
@@ -412,6 +415,8 @@ func accuPoll(ctx context.Context, db *storage.PgDB, srv string) error {
 }
 
 func Run(ctx context.Context, config config.Config) {
+	g, ctx := errgroup.WithContext(ctx)
+
 	db, err := storage.NewDB(config.DatabaseDsn)
 	if err != nil {
 		log.Fatal(err)
@@ -433,14 +438,44 @@ func Run(ctx context.Context, config config.Config) {
 		db:     db,
 	}
 
-	go func() {
+	srv := http.Server{
+		Addr:    config.ServerAddr,
+		Handler: webRouter(h),
+	}
+
+	g.Go(func() error {
+		logging.Slog.Info("Starting server on", slog.String("address", config.ServerAddr))
+		return srv.ListenAndServe()
+	})
+
+	g.Go(func() error {
+		<-ctx.Done()
+
+		ctx, cancel := context.WithTimeout(context.Background(), serverShutdownTime*time.Second)
+		defer cancel()
+
+		return srv.Shutdown(ctx)
+	})
+
+	g.Go(func() error {
 		for {
+			select {
+			case <-ctx.Done():
+				return nil
+			default:
+			}
 			if err := accuPoll(ctx, db, config.Accu); err != nil {
 				slog.Error(err.Error())
 			}
 			time.Sleep(pollInterval * time.Second)
 		}
-	}()
+	})
 
-	http.ListenAndServe(config.ServerAddr, webRouter(h))
+	if err := g.Wait(); err != nil {
+		if errors.Is(err, http.ErrServerClosed) {
+			logging.Slog.Info("Server successful shutdown")
+			return
+		}
+		logging.Slog.Error(fmt.Sprintf("Failed: %s", err.Error()))
+	}
 }
