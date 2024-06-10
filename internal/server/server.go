@@ -464,8 +464,12 @@ func Run(ctx context.Context, config config.Config) {
 				return nil
 			default:
 			}
-			if err := accuPoll(ctx, db, config.Accu); err != nil {
-				slog.Error(err.Error())
+			if config.Accu != "" {
+				if err := accuPoll(ctx, db, config.Accu); err != nil {
+					slog.Error(err.Error())
+				}
+			} else {
+				return errors.New("accrual system address empty")
 			}
 			time.Sleep(pollInterval * time.Second)
 		}
