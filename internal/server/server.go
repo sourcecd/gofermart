@@ -37,7 +37,7 @@ const (
 type handlers struct {
 	ctx    context.Context
 	seckey string
-	db     *storage.PgDB
+	db     storage.Store
 }
 
 func checkRequestCreds(r *http.Request) (*string, error) {
