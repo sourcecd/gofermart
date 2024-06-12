@@ -128,6 +128,7 @@ func TestSetCoockie(t *testing.T) {
 	SetTokenCookie(w, "test")
 
 	resp := w.Result()
+	defer resp.Body.Close()
 	cookie := resp.Cookies()
 	require.Len(t, cookie, 1)
 	require.Equal(t, cookie[0].Name, "Bearer")
