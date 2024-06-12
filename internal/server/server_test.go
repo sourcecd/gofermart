@@ -121,3 +121,25 @@ func TestUserParse(t *testing.T) {
 		})
 	}
 }
+
+func TestSetCoockie(t *testing.T) {
+	w := httptest.NewRecorder()
+
+	SetTokenCookie(w, "test")
+
+	resp := w.Result()
+	cookie := resp.Cookies()
+	require.Len(t, cookie, 1)
+	require.Equal(t, cookie[0].Name, "Bearer")
+	require.Equal(t, cookie[0].Value, "test")
+}
+
+func TestCheckContentType(t *testing.T) {
+	testReq := httptest.NewRequest(http.MethodPost, "/", nil)
+	testReq.Header.Set("Content-Type", "application/json")
+
+	err := checkContentType(testReq, "application/json")
+	require.NoError(t, err)
+	err = checkContentType(testReq, "text/html")
+	require.Error(t, err)
+}
