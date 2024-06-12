@@ -22,6 +22,7 @@ import (
 	"github.com/sourcecd/gofermart/internal/logging"
 	"github.com/sourcecd/gofermart/internal/models"
 	"github.com/sourcecd/gofermart/internal/prjerrors"
+	"github.com/sourcecd/gofermart/internal/retr"
 	"github.com/sourcecd/gofermart/internal/storage"
 	"golang.org/x/sync/errgroup"
 
@@ -38,6 +39,7 @@ type handlers struct {
 	ctx    context.Context
 	seckey string
 	db     storage.Store
+	rtr    *retr.Retr
 }
 
 func checkRequestCreds(r *http.Request) (*string, error) {
@@ -98,7 +100,7 @@ func (h *handlers) registerUser() http.HandlerFunc {
 			return
 		}
 
-		id, err := h.db.RegisterUser(h.ctx, reg)
+		id, err := h.rtr.UserFuncRetr(h.db.RegisterUser)(h.ctx, reg)
 		if err != nil {
 			if errors.Is(err, prjerrors.ErrAlreadyExists) {
 				http.Error(w, err.Error(), http.StatusConflict)
@@ -133,7 +135,7 @@ func (h *handlers) authUser() http.HandlerFunc {
 			return
 		}
 
-		id, err := h.db.AuthUser(h.ctx, user)
+		id, err := h.rtr.UserFuncRetr(h.db.AuthUser)(h.ctx, user)
 		if err != nil {
 			if errors.Is(err, prjerrors.ErrNotExists) {
 				http.Error(w, err.Error(), http.StatusUnauthorized)
@@ -188,7 +190,7 @@ func (h *handlers) orderRegister() http.HandlerFunc {
 			return
 		}
 
-		if err := h.db.CreateOrder(h.ctx, *userid, int64(ordnum)); err != nil {
+		if err := h.rtr.CreateOrderFuncRetr(h.db.CreateOrder)(h.ctx, *userid, int64(ordnum)); err != nil {
 			if errors.Is(err, prjerrors.ErrOrderAlreadyExists) {
 				http.Error(w, err.Error(), http.StatusOK)
 				return
@@ -219,7 +221,7 @@ func (h *handlers) ordersList() http.HandlerFunc {
 			return
 		}
 		var orderList []models.Order
-		if err := h.db.ListOrders(h.ctx, *userid, &orderList); err != nil {
+		if err := h.rtr.ListOrdersFuncRetr(h.db.ListOrders)(h.ctx, *userid, &orderList); err != nil {
 			if errors.Is(err, prjerrors.ErrEmptyData) {
 				http.Error(w, err.Error(), http.StatusNoContent)
 				return
@@ -253,7 +255,7 @@ func (h *handlers) getBalance() http.HandlerFunc {
 		}
 
 		var balance models.Balance
-		if err := h.db.GetBalance(h.ctx, *userid, &balance); err != nil {
+		if err := h.rtr.GetBalanceFuncRetr(h.db.GetBalance)(h.ctx, *userid, &balance); err != nil {
 			return
 		}
 
@@ -306,7 +308,7 @@ func (h *handlers) withdraw() http.HandlerFunc {
 			return
 		}
 
-		if err := h.db.Withdraw(h.ctx, *userid, &withdraw); err != nil {
+		if err := h.rtr.WithdrawFuncRetr(h.db.Withdraw)(h.ctx, *userid, &withdraw); err != nil {
 			if errors.Is(err, prjerrors.ErrNotEnough) {
 				http.Error(w, err.Error(), http.StatusPaymentRequired)
 				return
@@ -337,7 +339,7 @@ func (h *handlers) withdrawals() http.HandlerFunc {
 		}
 
 		var withdrawals []models.Withdrawals
-		if err := h.db.Withdrawals(h.ctx, *userid, &withdrawals); err != nil {
+		if err := h.rtr.WithdrawalsFuncRetr(h.db.Withdrawals)(h.ctx, *userid, &withdrawals); err != nil {
 			if errors.Is(err, prjerrors.ErrEmptyData) {
 				http.Error(w, err.Error(), http.StatusNoContent)
 				return
@@ -432,10 +434,14 @@ func Run(ctx context.Context, config config.Config) {
 		log.Fatal(err)
 	}
 
+	rtr := retr.NewRetr()
+	rtr.SetParams(1*time.Second, 30*time.Second, 3)
+
 	h := &handlers{
 		ctx:    ctx,
 		seckey: *seckey,
 		db:     db,
+		rtr:    rtr,
 	}
 
 	srv := http.Server{
