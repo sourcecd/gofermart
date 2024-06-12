@@ -11,12 +11,18 @@ import (
 
 const expired = 30
 
+type authHeader struct {
+	key,
+	value string
+}
+
 func TestCheckRequestCreds(t *testing.T) {
 	testCases := []struct {
-		name   string
-		cookie *http.Cookie
-		expErr error
-		expVal string
+		name       string
+		cookie     *http.Cookie
+		authHeader authHeader
+		expErr     error
+		expVal     string
 	}{
 		{
 			name: "okCoockie",
@@ -25,14 +31,26 @@ func TestCheckRequestCreds(t *testing.T) {
 				Value:  "tokenOKqweewq",
 				MaxAge: expired,
 			},
-			expErr: nil,
-			expVal: "tokenOKqweewq",
+			authHeader: authHeader{},
+			expErr:     nil,
+			expVal:     "tokenOKqweewq",
 		},
 		{
-			name:   "NoCoockie",
+			name:       "NoCoockie",
+			cookie:     &http.Cookie{},
+			authHeader: authHeader{},
+			expErr:     prjerrors.ErrAuthCredsNotFound,
+			expVal:     "",
+		},
+		{
+			name:   "NoCoockieWithAuthHeader",
 			cookie: &http.Cookie{},
-			expErr: prjerrors.ErrAuthCredsNotFound,
-			expVal: "",
+			authHeader: authHeader{
+				key:   "Authorization",
+				value: "Bearer tokenOKheader",
+			},
+			expErr: nil,
+			expVal: "tokenOKheader",
 		},
 	}
 
@@ -40,6 +58,7 @@ func TestCheckRequestCreds(t *testing.T) {
 		t.Run(v.name, func(t *testing.T) {
 			testReq := httptest.NewRequest(http.MethodPost, "/", nil)
 			testReq.AddCookie(v.cookie)
+			testReq.Header.Set(v.authHeader.key, v.authHeader.value)
 
 			res, err := checkRequestCreds(testReq)
 			require.ErrorIs(t, err, v.expErr)
@@ -47,17 +66,3 @@ func TestCheckRequestCreds(t *testing.T) {
 		})
 	}
 }
-
-/*func checkRequestCreds(r *http.Request) (*string, error) {
-	if ck, err := r.Cookie("Bearer"); err == nil {
-		return &ck.Value, nil
-	}
-	if bearer := r.Header.Get("Authorization"); bearer != "" {
-		headerSlice := strings.Split(bearer, " ")
-		if len(headerSlice) == 2 && headerSlice[0] == "Bearer" {
-			bearer = headerSlice[1]
-			return &bearer, nil
-		}
-	}
-	return nil, errors.New("auth creds not found")
-}*/
