@@ -9,4 +9,7 @@ var (
 	ErrOtherOrderAlreadyExists = errors.New("order already exists another user")
 	ErrEmptyData               = errors.New("no content")
 	ErrNotEnough               = errors.New("not enought money")
+
+	//for tests
+	ErrAuthCredsNotFound = errors.New("auth creds not found")
 )

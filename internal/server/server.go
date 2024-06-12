@@ -42,18 +42,18 @@ type handlers struct {
 	rtr    *retr.Retr
 }
 
-func checkRequestCreds(r *http.Request) (*string, error) {
+func checkRequestCreds(r *http.Request) (string, error) {
 	if ck, err := r.Cookie("Bearer"); err == nil {
-		return &ck.Value, nil
+		return ck.Value, nil
 	}
 	if bearer := r.Header.Get("Authorization"); bearer != "" {
 		headerSlice := strings.Split(bearer, " ")
 		if len(headerSlice) == 2 && headerSlice[0] == "Bearer" {
 			bearer = headerSlice[1]
-			return &bearer, nil
+			return bearer, nil
 		}
 	}
-	return nil, errors.New("auth creds not found")
+	return "", prjerrors.ErrAuthCredsNotFound
 }
 
 func UserParse(r *http.Request) (*models.User, error) {
@@ -169,7 +169,7 @@ func (h *handlers) orderRegister() http.HandlerFunc {
 			http.Error(w, "401 Unauthorized", http.StatusUnauthorized)
 			return
 		}
-		userid, err := auth.ExtractJWT(*gettoken, h.seckey)
+		userid, err := auth.ExtractJWT(gettoken, h.seckey)
 		if err != nil {
 			http.Error(w, "401 Unauthorized", http.StatusUnauthorized)
 			return
@@ -215,7 +215,7 @@ func (h *handlers) ordersList() http.HandlerFunc {
 			http.Error(w, "401 Unauthorized", http.StatusUnauthorized)
 			return
 		}
-		userid, err := auth.ExtractJWT(*gettoken, h.seckey)
+		userid, err := auth.ExtractJWT(gettoken, h.seckey)
 		if err != nil {
 			http.Error(w, "401 Unauthorized", http.StatusUnauthorized)
 			return
@@ -248,7 +248,7 @@ func (h *handlers) getBalance() http.HandlerFunc {
 			http.Error(w, "401 Unauthorized", http.StatusUnauthorized)
 			return
 		}
-		userid, err := auth.ExtractJWT(*gettoken, h.seckey)
+		userid, err := auth.ExtractJWT(gettoken, h.seckey)
 		if err != nil {
 			http.Error(w, "401 Unauthorized", http.StatusUnauthorized)
 			return
@@ -282,7 +282,7 @@ func (h *handlers) withdraw() http.HandlerFunc {
 			http.Error(w, "401 Unauthorized", http.StatusUnauthorized)
 			return
 		}
-		userid, err := auth.ExtractJWT(*gettoken, h.seckey)
+		userid, err := auth.ExtractJWT(gettoken, h.seckey)
 		if err != nil {
 			http.Error(w, "401 Unauthorized", http.StatusUnauthorized)
 			return
@@ -332,7 +332,7 @@ func (h *handlers) withdrawals() http.HandlerFunc {
 			http.Error(w, "401 Unauthorized", http.StatusUnauthorized)
 			return
 		}
-		userid, err := auth.ExtractJWT(*gettoken, h.seckey)
+		userid, err := auth.ExtractJWT(gettoken, h.seckey)
 		if err != nil {
 			http.Error(w, "401 Unauthorized", http.StatusUnauthorized)
 			return
