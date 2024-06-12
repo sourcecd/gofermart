@@ -3,8 +3,10 @@ package server
 import (
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
+	"github.com/sourcecd/gofermart/internal/models"
 	"github.com/sourcecd/gofermart/internal/prjerrors"
 	"github.com/stretchr/testify/require"
 )
@@ -61,8 +63,61 @@ func TestCheckRequestCreds(t *testing.T) {
 			testReq.Header.Set(v.authHeader.key, v.authHeader.value)
 
 			res, err := checkRequestCreds(testReq)
+
 			require.ErrorIs(t, err, v.expErr)
 			require.Equal(t, v.expVal, res)
+		})
+	}
+}
+
+func TestUserParse(t *testing.T) {
+	testCases := []struct {
+		name   string
+		req    string
+		expAns *models.User
+		expErr error
+	}{
+		{
+			name: "OKReq",
+			req:  `{"login": "test", "password": "testok"}`,
+			expAns: &models.User{
+				Login:    "test",
+				Password: "testok",
+			},
+			expErr: nil,
+		},
+		{
+			name:   "ErrReq1",
+			req:    `{"login": "test", "password":`,
+			expAns: &models.User{},
+			expErr: prjerrors.ErrReqJSONParse,
+		},
+		{
+			name:   "ErrReq2",
+			req:    `{"login": "", "password":"qwe"}`,
+			expAns: nil,
+			expErr: prjerrors.ErrValidateLogPass,
+		},
+		{
+			name:   "ErrReq3",
+			req:    `{"login": "qwe", "password":""}`,
+			expAns: nil,
+			expErr: prjerrors.ErrValidateLogPass,
+		},
+	}
+
+	for _, v := range testCases {
+		t.Run(v.name, func(t *testing.T) {
+			reader := strings.NewReader(v.req)
+			testReq := httptest.NewRequest(http.MethodPost, "/", reader)
+
+			user, err := userParse(testReq)
+
+			require.ErrorIs(t, err, v.expErr)
+			if err == nil {
+				require.Equal(t, v.expAns.Login, user.Login)
+				require.Equal(t, v.expAns.Password, user.Password)
+			}
 		})
 	}
 }

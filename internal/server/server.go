@@ -56,18 +56,18 @@ func checkRequestCreds(r *http.Request) (string, error) {
 	return "", prjerrors.ErrAuthCredsNotFound
 }
 
-func UserParse(r *http.Request) (*models.User, error) {
+func userParse(r *http.Request) (*models.User, error) {
 	regUser := &models.User{}
 	enc := json.NewDecoder(r.Body)
 	if err := enc.Decode(regUser); err != nil {
-		return nil, errors.New("request json parse failed")
+		return nil, prjerrors.ErrReqJSONParse
 	}
 	ok, err := govalidator.ValidateStruct(regUser)
 	if err != nil {
-		return nil, err
+		return nil, prjerrors.ErrValidateLogPass
 	}
 	if !ok {
-		return nil, errors.New("validate login or password false (maybe empty)")
+		return nil, prjerrors.ErrValidateLogPass
 	}
 	return regUser, nil
 }
@@ -94,7 +94,7 @@ func (h *handlers) registerUser() http.HandlerFunc {
 			return
 		}
 
-		reg, err := UserParse(r)
+		reg, err := userParse(r)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -129,7 +129,7 @@ func (h *handlers) authUser() http.HandlerFunc {
 			return
 		}
 
-		user, err := UserParse(r)
+		user, err := userParse(r)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return

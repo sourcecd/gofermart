@@ -5,6 +5,7 @@ go 1.21.10
 require (
 	github.com/go-chi/chi/v5 v5.0.12
 	github.com/golang-jwt/jwt/v4 v4.5.0
+	github.com/golang/mock v1.6.0
 	github.com/jackc/pgx/v5 v5.6.0
 	github.com/stretchr/testify v1.8.1
 )

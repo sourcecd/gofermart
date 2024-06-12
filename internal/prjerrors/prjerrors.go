@@ -10,6 +10,7 @@ var (
 	ErrEmptyData               = errors.New("no content")
 	ErrNotEnough               = errors.New("not enought money")
 
-	//for tests
 	ErrAuthCredsNotFound = errors.New("auth creds not found")
+	ErrReqJSONParse      = errors.New("request json parse failed")
+	ErrValidateLogPass   = errors.New("validate login or password false (maybe empty)")
 )
