@@ -115,10 +115,10 @@ func (h *handlers) registerUser() http.HandlerFunc {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		SetTokenCookie(w, *token)
+		SetTokenCookie(w, token)
 
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(*token))
+		w.Write([]byte(token))
 	}
 }
 
@@ -150,10 +150,10 @@ func (h *handlers) authUser() http.HandlerFunc {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		SetTokenCookie(w, *token)
+		SetTokenCookie(w, token)
 
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(*token))
+		w.Write([]byte(token))
 	}
 }
 
@@ -190,7 +190,7 @@ func (h *handlers) orderRegister() http.HandlerFunc {
 			return
 		}
 
-		if err := h.rtr.CreateOrderFuncRetr(h.db.CreateOrder)(h.ctx, *userid, int64(ordnum)); err != nil {
+		if err := h.rtr.CreateOrderFuncRetr(h.db.CreateOrder)(h.ctx, userid, int64(ordnum)); err != nil {
 			if errors.Is(err, prjerrors.ErrOrderAlreadyExists) {
 				http.Error(w, err.Error(), http.StatusOK)
 				return
@@ -221,7 +221,7 @@ func (h *handlers) ordersList() http.HandlerFunc {
 			return
 		}
 		var orderList []models.Order
-		if err := h.rtr.ListOrdersFuncRetr(h.db.ListOrders)(h.ctx, *userid, &orderList); err != nil {
+		if err := h.rtr.ListOrdersFuncRetr(h.db.ListOrders)(h.ctx, userid, &orderList); err != nil {
 			if errors.Is(err, prjerrors.ErrEmptyData) {
 				http.Error(w, err.Error(), http.StatusNoContent)
 				return
@@ -255,7 +255,7 @@ func (h *handlers) getBalance() http.HandlerFunc {
 		}
 
 		var balance models.Balance
-		if err := h.rtr.GetBalanceFuncRetr(h.db.GetBalance)(h.ctx, *userid, &balance); err != nil {
+		if err := h.rtr.GetBalanceFuncRetr(h.db.GetBalance)(h.ctx, userid, &balance); err != nil {
 			return
 		}
 
@@ -308,7 +308,7 @@ func (h *handlers) withdraw() http.HandlerFunc {
 			return
 		}
 
-		if err := h.rtr.WithdrawFuncRetr(h.db.Withdraw)(h.ctx, *userid, &withdraw); err != nil {
+		if err := h.rtr.WithdrawFuncRetr(h.db.Withdraw)(h.ctx, userid, &withdraw); err != nil {
 			if errors.Is(err, prjerrors.ErrNotEnough) {
 				http.Error(w, err.Error(), http.StatusPaymentRequired)
 				return
@@ -339,7 +339,7 @@ func (h *handlers) withdrawals() http.HandlerFunc {
 		}
 
 		var withdrawals []models.Withdrawals
-		if err := h.rtr.WithdrawalsFuncRetr(h.db.Withdrawals)(h.ctx, *userid, &withdrawals); err != nil {
+		if err := h.rtr.WithdrawalsFuncRetr(h.db.Withdrawals)(h.ctx, userid, &withdrawals); err != nil {
 			if errors.Is(err, prjerrors.ErrEmptyData) {
 				http.Error(w, err.Error(), http.StatusNoContent)
 				return

@@ -15,7 +15,7 @@ type Claims struct {
 	UserID int64
 }
 
-func GenJWT(userID int64, secKey string) (*string, error) {
+func GenJWT(userID int64, secKey string) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(tokenExp)),
@@ -24,12 +24,12 @@ func GenJWT(userID int64, secKey string) (*string, error) {
 	})
 	tokenString, err := token.SignedString([]byte(secKey))
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	return &tokenString, nil
+	return tokenString, nil
 }
 
-func ExtractJWT(tokenString string, secKey string) (*int64, error) {
+func ExtractJWT(tokenString string, secKey string) (int64, error) {
 	claims := &Claims{}
 	token, err := jwt.ParseWithClaims(tokenString, claims,
 		func(t *jwt.Token) (interface{}, error) {
@@ -39,12 +39,12 @@ func ExtractJWT(tokenString string, secKey string) (*int64, error) {
 			return []byte(secKey), nil
 		})
 	if err != nil {
-		return nil, err
+		return -1, err
 	}
 
 	if !token.Valid {
-		return nil, errors.New("token is not valid")
+		return -1, errors.New("token is not valid")
 	}
 
-	return &claims.UserID, nil
+	return claims.UserID, nil
 }
