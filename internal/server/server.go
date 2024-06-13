@@ -110,7 +110,7 @@ func (h *handlers) registerUser() http.HandlerFunc {
 			return
 		}
 
-		token, err := auth.GenJWT(*id, h.seckey)
+		token, err := auth.GenJWT(id, h.seckey)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -145,7 +145,7 @@ func (h *handlers) authUser() http.HandlerFunc {
 			return
 		}
 
-		token, err := auth.GenJWT(*id, h.seckey)
+		token, err := auth.GenJWT(id, h.seckey)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -439,7 +439,7 @@ func Run(ctx context.Context, config config.Config) {
 
 	h := &handlers{
 		ctx:    ctx,
-		seckey: *seckey,
+		seckey: seckey,
 		db:     db,
 		rtr:    rtr,
 	}

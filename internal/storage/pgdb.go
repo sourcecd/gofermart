@@ -104,30 +104,30 @@ func (pg *PgDB) InitSecKey(ctx context.Context) error {
 	return nil
 }
 
-func (pg *PgDB) GetSecKey(ctx context.Context) (*string, error) {
+func (pg *PgDB) GetSecKey(ctx context.Context) (string, error) {
 	var seckey string
 	row := pg.db.QueryRowContext(ctx, getSecurityKey)
 	if err := row.Scan(&seckey); err != nil {
-		return nil, err
+		return "", err
 	}
 
-	return &seckey, nil
+	return seckey, nil
 }
 
-func (pg *PgDB) RegisterUser(ctx context.Context, reg *models.User) (*int64, error) {
+func (pg *PgDB) RegisterUser(ctx context.Context, reg *models.User) (int64, error) {
 	var id int64
 	err := pg.db.QueryRowContext(ctx, createUserRec, reg.Login, cryptandsign.GetPassHash(reg.Password)).Scan(&id)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgerrcode.IsIntegrityConstraintViolation(pgErr.Code) {
-			return nil, prjerrors.ErrAlreadyExists
+			return -1, prjerrors.ErrAlreadyExists
 		}
-		return nil, err
+		return -1, err
 	}
-	return &id, nil
+	return id, nil
 }
 
-func (pg *PgDB) AuthUser(ctx context.Context, reg *models.User) (*int64, error) {
+func (pg *PgDB) AuthUser(ctx context.Context, reg *models.User) (int64, error) {
 	var (
 		id int64
 		login,
@@ -136,14 +136,14 @@ func (pg *PgDB) AuthUser(ctx context.Context, reg *models.User) (*int64, error) 
 	row := pg.db.QueryRowContext(ctx, getUserRec, reg.Login)
 	if err := row.Scan(&id, &login, &password); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, prjerrors.ErrNotExists
+			return -1, prjerrors.ErrNotExists
 		}
-		return nil, err
+		return -1, err
 	}
 	if cryptandsign.GetPassHash(reg.Password) == password {
-		return &id, nil
+		return id, nil
 	}
-	return nil, prjerrors.ErrNotExists
+	return -1, prjerrors.ErrNotExists
 }
 
 func (pg *PgDB) CreateOrder(ctx context.Context, userid, orderid int64) error {

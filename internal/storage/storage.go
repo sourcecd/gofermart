@@ -9,9 +9,9 @@ import (
 type Store interface {
 	PopulateDB(ctx context.Context) error
 	InitSecKey(ctx context.Context) error
-	GetSecKey(ctx context.Context) (*string, error)
-	RegisterUser(ctx context.Context, reg *models.User) (*int64, error)
-	AuthUser(ctx context.Context, reg *models.User) (*int64, error)
+	GetSecKey(ctx context.Context) (string, error)
+	RegisterUser(ctx context.Context, reg *models.User) (int64, error)
+	AuthUser(ctx context.Context, reg *models.User) (int64, error)
 	CreateOrder(ctx context.Context, userid, orderid int64) error
 	ListOrders(ctx context.Context, userid int64, orderList *[]models.Order) error
 	GetBalance(ctx context.Context, userid int64, balance *models.Balance) error

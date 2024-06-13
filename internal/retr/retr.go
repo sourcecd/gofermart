@@ -18,7 +18,7 @@ type (
 		skippedErrors error
 	}
 
-	UserFunc        func(ctx context.Context, reg *models.User) (*int64, error)
+	UserFunc        func(ctx context.Context, reg *models.User) (int64, error)
 	CreateOrderFunc func(ctx context.Context, userid, orderid int64) error
 	ListOrdersFunc  func(ctx context.Context, userid int64, orderList *[]models.Order) error
 	GetBalanceFunc  func(ctx context.Context, userid int64, balance *models.Balance) error
@@ -29,10 +29,10 @@ type (
 func (rtr *Retr) UserFuncRetr(f UserFunc) UserFunc {
 	bf := retry.WithMaxRetries(rtr.maxRetries, retry.NewFibonacci(rtr.fiboDuration))
 
-	return func(ctx context.Context, reg *models.User) (*int64, error) {
+	return func(ctx context.Context, reg *models.User) (int64, error) {
 		ctx, cancel := context.WithTimeout(ctx, rtr.timeout)
 		defer cancel()
-		var userid *int64
+		var userid int64
 		var err error
 		err = retry.Do(ctx, bf, func(ctx context.Context) error {
 			userid, err = f(ctx, reg)
