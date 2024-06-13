@@ -64,10 +64,10 @@ func (mr *MockStoreMockRecorder) AccuSave(ctx, accrual interface{}) *gomock.Call
 }
 
 // AuthUser mocks base method.
-func (m *MockStore) AuthUser(ctx context.Context, reg *models.User) (*int64, error) {
+func (m *MockStore) AuthUser(ctx context.Context, reg *models.User) (int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AuthUser", ctx, reg)
-	ret0, _ := ret[0].(*int64)
+	ret0, _ := ret[0].(int64)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -107,10 +107,10 @@ func (mr *MockStoreMockRecorder) GetBalance(ctx, userid, balance interface{}) *g
 }
 
 // GetSecKey mocks base method.
-func (m *MockStore) GetSecKey(ctx context.Context) (*string, error) {
+func (m *MockStore) GetSecKey(ctx context.Context) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSecKey", ctx)
-	ret0, _ := ret[0].(*string)
+	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -164,10 +164,10 @@ func (mr *MockStoreMockRecorder) PopulateDB(ctx interface{}) *gomock.Call {
 }
 
 // RegisterUser mocks base method.
-func (m *MockStore) RegisterUser(ctx context.Context, reg *models.User) (*int64, error) {
+func (m *MockStore) RegisterUser(ctx context.Context, reg *models.User) (int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "RegisterUser", ctx, reg)
-	ret0, _ := ret[0].(*int64)
+	ret0, _ := ret[0].(int64)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
