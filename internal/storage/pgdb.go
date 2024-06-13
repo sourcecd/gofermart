@@ -96,7 +96,7 @@ func (pg *PgDB) InitSecKey(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		if _, err = pg.db.ExecContext(ctx, createSecureKey, *seckey); err != nil {
+		if _, err = pg.db.ExecContext(ctx, createSecureKey, seckey); err != nil {
 			return err
 		}
 	}

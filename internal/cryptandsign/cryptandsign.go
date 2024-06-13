@@ -6,13 +6,13 @@ import (
 	"encoding/hex"
 )
 
-func GenRandKey() (*string, error) {
+func GenRandKey() (string, error) {
 	key := make([]byte, 32)
 	if _, err := rand.Read(key); err != nil {
-		return nil, err
+		return "", err
 	}
 	encodedKey := hex.EncodeToString(key)
-	return &encodedKey, nil
+	return encodedKey, nil
 }
 
 func GetPassHash(password string) string {
