@@ -43,9 +43,10 @@ func TestRegisterUser(t *testing.T) {
 	db.EXPECT().RegisterUser(gomock.Any(), &models.User{Login: login, Password: password}).Return(userID, nil)
 
 	h.registerUser()(w, r)
+	res := w.Result()
 
-	b, _ := io.ReadAll(w.Result().Body)
-	defer w.Result().Body.Close()
+	b, _ := io.ReadAll(res.Body)
+	defer res.Body.Close()
 	require.Len(t, b, 121)
 
 	userid, _ := auth.ExtractJWT(string(b), h.seckey)
