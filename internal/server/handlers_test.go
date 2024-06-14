@@ -42,6 +42,7 @@ func TestRegisterUser(t *testing.T) {
 
 	db.EXPECT().RegisterUser(gomock.Any(), &models.User{Login: login, Password: password}).Return(userID, nil)
 
+	//target test handler
 	h.registerUser()(w, r)
 	res := w.Result()
 
@@ -49,6 +50,45 @@ func TestRegisterUser(t *testing.T) {
 	defer res.Body.Close()
 	require.Len(t, b, 121)
 
-	userid, _ := auth.ExtractJWT(string(b), h.seckey)
+	//check
+	userid, err := auth.ExtractJWT(string(b), h.seckey)
+	require.NoError(t, err)
+	require.Equal(t, userID, userid)
+}
+
+func TestAuthUser(t *testing.T) {
+	userID := int64(100)
+	login := "test123"
+	password := "testpass123"
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	db := mock.NewMockStore(ctrl)
+
+	reader := strings.NewReader(fmt.Sprintf(`{"login": "%s", "password": "%s"}`, login, password))
+	r := httptest.NewRequest(http.MethodPost, "/", reader)
+	r.Header.Add("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	h := &handlers{
+		ctx:    context.Background(),
+		seckey: seckey,
+		db:     db,
+		rtr:    retr.NewRetr(),
+	}
+
+	db.EXPECT().AuthUser(gomock.Any(), &models.User{Login: login, Password: password}).Return(userID, nil)
+
+	//target test handler
+	h.authUser()(w, r)
+	res := w.Result()
+
+	b, _ := io.ReadAll(res.Body)
+	defer res.Body.Close()
+	require.Len(t, b, 123)
+
+	//check
+	userid, err := auth.ExtractJWT(string(b), h.seckey)
+	require.NoError(t, err)
 	require.Equal(t, userID, userid)
 }
