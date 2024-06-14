@@ -45,6 +45,7 @@ func TestRegisterUser(t *testing.T) {
 	h.registerUser()(w, r)
 
 	b, _ := io.ReadAll(w.Result().Body)
+	defer w.Result().Body.Close()
 	require.Len(t, b, 121)
 
 	userid, _ := auth.ExtractJWT(string(b), h.seckey)
