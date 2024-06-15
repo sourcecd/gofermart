@@ -19,10 +19,13 @@ import (
 
 const seckey = "oivohfo8Saelahv2vei8ee8Ighae3ei0"
 
+var tokenTest string
+
 func TestRegisterUser(t *testing.T) {
 	userID := int64(10)
 	login := "test"
 	password := "testpass"
+	tokenLen := 121
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -46,9 +49,10 @@ func TestRegisterUser(t *testing.T) {
 	h.registerUser()(w, r)
 	res := w.Result()
 
-	b, _ := io.ReadAll(res.Body)
+	b, err := io.ReadAll(res.Body)
+	require.NoError(t, err)
 	defer res.Body.Close()
-	require.Len(t, b, 121)
+	require.Len(t, b, tokenLen)
 
 	//check
 	userid, err := auth.ExtractJWT(string(b), h.seckey)
@@ -60,6 +64,7 @@ func TestAuthUser(t *testing.T) {
 	userID := int64(100)
 	login := "test123"
 	password := "testpass123"
+	tokenLen := 123
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -83,12 +88,51 @@ func TestAuthUser(t *testing.T) {
 	h.authUser()(w, r)
 	res := w.Result()
 
-	b, _ := io.ReadAll(res.Body)
+	b, err := io.ReadAll(res.Body)
+	require.NoError(t, err)
 	defer res.Body.Close()
-	require.Len(t, b, 123)
+	tokenTest = string(b)
+	require.Len(t, b, tokenLen)
 
 	//check
 	userid, err := auth.ExtractJWT(string(b), h.seckey)
 	require.NoError(t, err)
 	require.Equal(t, userID, userid)
+}
+
+func TestOrderRegister(t *testing.T) {
+	orderNum := "12345678903"
+	orderNumMock := int64(12345678903)
+	UserID := int64(100)
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	db := mock.NewMockStore(ctrl)
+
+	reader := strings.NewReader(orderNum)
+	r := httptest.NewRequest(http.MethodPost, "/", reader)
+	r.AddCookie(&http.Cookie{
+		Name:  "Bearer",
+		Value: tokenTest,
+	})
+	r.Header.Add("Content-Type", "text/plain")
+	w := httptest.NewRecorder()
+
+	db.EXPECT().CreateOrder(gomock.Any(), UserID, orderNumMock).Return(nil)
+
+	h := &handlers{
+		ctx:    context.Background(),
+		seckey: seckey,
+		db:     db,
+		rtr:    retr.NewRetr(),
+	}
+
+	//target test handler
+	h.orderRegister()(w, r)
+
+	res := w.Result()
+	b, err := io.ReadAll(res.Body)
+	require.NoError(t, err)
+
+	require.Equal(t, orderNum, string(b))
 }
