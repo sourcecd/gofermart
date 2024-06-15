@@ -261,6 +261,7 @@ func TestWithdraw(t *testing.T) {
 	res := w.Result()
 	b, err := io.ReadAll(res.Body)
 	require.NoError(t, err)
+	defer res.Body.Close()
 	require.Equal(t, http.StatusOK, res.StatusCode)
 	require.Equal(t, "\n", string(b))
 }
