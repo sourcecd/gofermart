@@ -304,5 +304,6 @@ func TestWithdrawals(t *testing.T) {
 	res := w.Result()
 	b, err := io.ReadAll(res.Body)
 	require.NoError(t, err)
+	defer res.Body.Close()
 	require.JSONEq(t, jsonAndRes, string(b))
 }
