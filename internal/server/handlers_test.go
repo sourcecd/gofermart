@@ -141,7 +141,7 @@ func TestOrdersList(t *testing.T) {
 
 	var (
 		orderListPtr *[]models.Order
-		testTime     = time.Now()
+		testTime     = time.Now().Format(time.RFC3339)
 	)
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -156,7 +156,7 @@ func TestOrdersList(t *testing.T) {
 			*ord = append(*ord, models.Order{
 				Number:     "12345678903",
 				Status:     "NEW",
-				UploadedAt: testTime.Format(time.RFC3339),
+				UploadedAt: testTime,
 			})
 			return nil
 		})
@@ -168,7 +168,7 @@ func TestOrdersList(t *testing.T) {
 			"uploaded_at": "%s"
 		}
 	]
-	`, testTime.Format(time.RFC3339))
+	`, testTime)
 
 	h := &handlers{
 		ctx:    context.Background(),
@@ -229,4 +229,80 @@ func TestGetBalance(t *testing.T) {
 	defer res.Body.Close()
 
 	require.JSONEq(t, jsonExpRes, string(b))
+}
+
+func TestWithdraw(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	db := mock.NewMockStore(ctrl)
+
+	jsonReq := `{"order":"12345678903", "sum":10.5}`
+
+	h := &handlers{
+		ctx:    context.Background(),
+		seckey: seckey,
+		db:     db,
+		rtr:    retr.NewRetr(),
+	}
+
+	db.EXPECT().Withdraw(gomock.Any(), userID, &models.Withdraw{Order: "12345678903", Sum: 10.5}).Return(nil)
+
+	r := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(jsonReq))
+	r.Header.Add("Content-Type", "application/json")
+	r.AddCookie(&http.Cookie{
+		Name:  "Bearer",
+		Value: tokenTest,
+	})
+	w := httptest.NewRecorder()
+
+	//target check header
+	h.withdraw()(w, r)
+
+	res := w.Result()
+	b, err := io.ReadAll(res.Body)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, res.StatusCode)
+	require.Equal(t, "\n", string(b))
+}
+
+func TestWithdrawals(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	db := mock.NewMockStore(ctrl)
+
+	var withdrawalsPtr *[]models.Withdrawals
+	procTime := time.Now().Format(time.RFC3339)
+
+	h := &handlers{
+		ctx:    context.Background(),
+		seckey: seckey,
+		db:     db,
+		rtr:    retr.NewRetr(),
+	}
+
+	db.EXPECT().Withdrawals(gomock.Any(), userID, gomock.AssignableToTypeOf(withdrawalsPtr)).DoAndReturn(
+		func(ctx context.Context, userid int64, withdrawals *[]models.Withdrawals) error {
+			*withdrawals = append(*withdrawals, models.Withdrawals{
+				Order:       "12345678903",
+				Sum:         15.5,
+				ProcessedAt: procTime,
+			})
+			return nil
+		})
+	jsonAndRes := fmt.Sprintf(`[{"order": "12345678903", "sum": 15.5, "processed_at": "%s"}]`, procTime)
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.AddCookie(&http.Cookie{
+		Name:  "Bearer",
+		Value: tokenTest,
+	})
+	w := httptest.NewRecorder()
+
+	//target check header
+	h.withdrawals()(w, r)
+
+	res := w.Result()
+	b, err := io.ReadAll(res.Body)
+	require.NoError(t, err)
+	require.JSONEq(t, jsonAndRes, string(b))
 }
