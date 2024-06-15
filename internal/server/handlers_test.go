@@ -160,7 +160,7 @@ func TestOrdersList(t *testing.T) {
 			})
 			return nil
 		})
-	jsonRes := fmt.Sprintf(`
+	jsonExpRes := fmt.Sprintf(`
 	[
 		{
 			"number": "12345678903",
@@ -177,10 +177,56 @@ func TestOrdersList(t *testing.T) {
 		rtr:    retr.NewRetr(),
 	}
 
+	//target check handler
 	h.ordersList()(w, r)
 	res := w.Result()
 	b, err := io.ReadAll(res.Body)
 	require.NoError(t, err)
 	defer res.Body.Close()
-	require.JSONEq(t, jsonRes, string(b))
+	require.JSONEq(t, jsonExpRes, string(b))
+}
+
+func TestGetBalance(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	db := mock.NewMockStore(ctrl)
+
+	var balancePtr *models.Balance
+
+	h := &handlers{
+		ctx:    context.Background(),
+		seckey: seckey,
+		db:     db,
+		rtr:    retr.NewRetr(),
+	}
+
+	db.EXPECT().GetBalance(gomock.Any(), userID, gomock.AssignableToTypeOf(balancePtr)).DoAndReturn(
+		func(ctx context.Context, userid int64, balance *models.Balance) error {
+			balance.Current = 10.5
+			balance.Withdrawn = 42.5
+			return nil
+		})
+	jsonExpRes := `
+	{
+		"current": 10.5,
+		"withdrawn": 42.5
+	}
+	`
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.AddCookie(&http.Cookie{
+		Name:  "Bearer",
+		Value: tokenTest,
+	})
+	w := httptest.NewRecorder()
+
+	//target check handler
+	h.getBalance()(w, r)
+
+	res := w.Result()
+	b, err := io.ReadAll(res.Body)
+	require.NoError(t, err)
+	defer res.Body.Close()
+
+	require.JSONEq(t, jsonExpRes, string(b))
 }
