@@ -24,8 +24,8 @@ func main() {
 
 	var config config.Config
 
-	setCmdlineFlags(&config)
-	setEnvironmentVariables(&config)
+	SetCmdlineFlags(&config)
+	SetEnvironmentVariables(&config)
 
 	server.Run(ctx, config)
 }

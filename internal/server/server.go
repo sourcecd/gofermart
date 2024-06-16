@@ -361,13 +361,13 @@ func (h *handlers) withdrawals() http.HandlerFunc {
 
 func webRouter(h *handlers) *chi.Mux {
 	mux := chi.NewRouter()
-	mux.Post("/api/user/register", logging.WriteLogging(compression.GzipCompDecomp(h.registerUser())))
-	mux.Post("/api/user/login", logging.WriteLogging(compression.GzipCompDecomp(h.authUser())))
-	mux.Post("/api/user/orders", logging.WriteLogging(compression.GzipCompDecomp(h.orderRegister())))
-	mux.Get("/api/user/orders", logging.WriteLogging(compression.GzipCompDecomp(h.ordersList())))
-	mux.Get("/api/user/balance", logging.WriteLogging(compression.GzipCompDecomp(h.getBalance())))
-	mux.Post("/api/user/balance/withdraw", logging.WriteLogging(compression.GzipCompDecomp(h.withdraw())))
-	mux.Get("/api/user/withdrawals", logging.WriteLogging(compression.GzipCompDecomp(h.withdrawals())))
+	mux.Post("/api/user/register", logging.WriteLogging(compression.GzipCompressDecompress(h.registerUser())))
+	mux.Post("/api/user/login", logging.WriteLogging(compression.GzipCompressDecompress(h.authUser())))
+	mux.Post("/api/user/orders", logging.WriteLogging(compression.GzipCompressDecompress(h.orderRegister())))
+	mux.Get("/api/user/orders", logging.WriteLogging(compression.GzipCompressDecompress(h.ordersList())))
+	mux.Get("/api/user/balance", logging.WriteLogging(compression.GzipCompressDecompress(h.getBalance())))
+	mux.Post("/api/user/balance/withdraw", logging.WriteLogging(compression.GzipCompressDecompress(h.withdraw())))
+	mux.Get("/api/user/withdrawals", logging.WriteLogging(compression.GzipCompressDecompress(h.withdrawals())))
 
 	return mux
 }

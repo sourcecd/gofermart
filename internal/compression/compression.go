@@ -14,7 +14,7 @@ type compressWriter struct {
 	zw *gzip.Writer
 }
 
-func newCompressWriter(w http.ResponseWriter) *compressWriter {
+func NewCompressWriter(w http.ResponseWriter) *compressWriter {
 	return &compressWriter{
 		w:  w,
 		zw: gzip.NewWriter(w),
@@ -43,7 +43,7 @@ type compressReader struct {
 	zr *gzip.Reader
 }
 
-func newCompressReader(r io.ReadCloser) (*compressReader, error) {
+func NewCompressReader(r io.ReadCloser) (*compressReader, error) {
 	zr, err := gzip.NewReader(r)
 	if err != nil {
 		return nil, err
@@ -66,7 +66,7 @@ func (c *compressReader) Close() error {
 	return c.zr.Close()
 }
 
-func GzipCompDecomp(h http.HandlerFunc) http.HandlerFunc {
+func GzipCompressDecompress(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		ow := w
@@ -78,7 +78,7 @@ func GzipCompDecomp(h http.HandlerFunc) http.HandlerFunc {
 		}
 		supportsGzip := strings.Contains(acceptEncoding, "gzip")
 		if supportsGzip && (r.Method == http.MethodGet || supportsContentType) {
-			cw := newCompressWriter(w)
+			cw := NewCompressWriter(w)
 			ow = cw
 			defer cw.Close()
 		}
@@ -86,7 +86,7 @@ func GzipCompDecomp(h http.HandlerFunc) http.HandlerFunc {
 		contentEncoding := r.Header.Get("Content-Encoding")
 		sendsGzip := strings.Contains(contentEncoding, "gzip")
 		if sendsGzip {
-			cr, err := newCompressReader(r.Body)
+			cr, err := NewCompressReader(r.Body)
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 				return
