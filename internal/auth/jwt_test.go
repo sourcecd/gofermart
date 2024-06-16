@@ -16,8 +16,8 @@ const (
 
 var testToken string
 
-func TestGenJWT(t *testing.T) {
-	token, err := GenJWT(userID, secKey)
+func TestGenerateJWT(t *testing.T) {
+	token, err := GenerateJWT(userID, secKey)
 	require.NoError(t, err)
 	require.Len(t, token, lenToken)
 	testToken = token

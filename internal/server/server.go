@@ -110,7 +110,7 @@ func (h *handlers) registerUser() http.HandlerFunc {
 			return
 		}
 
-		token, err := auth.GenJWT(id, h.seckey)
+		token, err := auth.GenerateJWT(id, h.seckey)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -145,7 +145,7 @@ func (h *handlers) authUser() http.HandlerFunc {
 			return
 		}
 
-		token, err := auth.GenJWT(id, h.seckey)
+		token, err := auth.GenerateJWT(id, h.seckey)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
