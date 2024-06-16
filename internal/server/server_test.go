@@ -8,6 +8,7 @@ import (
 
 	"github.com/sourcecd/gofermart/internal/models"
 	"github.com/sourcecd/gofermart/internal/prjerrors"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -65,7 +66,7 @@ func TestCheckRequestCreds(t *testing.T) {
 			res, err := checkRequestCreds(testReq)
 
 			require.ErrorIs(t, err, v.expErr)
-			require.Equal(t, v.expVal, res)
+			assert.Equal(t, v.expVal, res)
 		})
 	}
 }
@@ -115,8 +116,8 @@ func TestUserParse(t *testing.T) {
 
 			require.ErrorIs(t, err, v.expErr)
 			if err == nil {
-				require.Equal(t, v.expAns.Login, user.Login)
-				require.Equal(t, v.expAns.Password, user.Password)
+				assert.Equal(t, v.expAns.Login, user.Login)
+				assert.Equal(t, v.expAns.Password, user.Password)
 			}
 		})
 	}
@@ -130,9 +131,9 @@ func TestSetCoockie(t *testing.T) {
 	resp := w.Result()
 	defer resp.Body.Close()
 	cookie := resp.Cookies()
-	require.Len(t, cookie, 1)
-	require.Equal(t, cookie[0].Name, "Bearer")
-	require.Equal(t, cookie[0].Value, "test")
+	assert.Len(t, cookie, 1)
+	assert.Equal(t, cookie[0].Name, "Bearer")
+	assert.Equal(t, cookie[0].Value, "test")
 }
 
 func TestCheckContentType(t *testing.T) {

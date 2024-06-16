@@ -4,6 +4,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -19,7 +20,7 @@ var testToken string
 func TestGenerateJWT(t *testing.T) {
 	token, err := GenerateJWT(userID, secKey)
 	require.NoError(t, err)
-	require.Len(t, token, lenToken)
+	assert.Len(t, token, lenToken)
 	testToken = token
 }
 
@@ -59,7 +60,7 @@ func TestExtractJWT(t *testing.T) {
 			if v.expErr == nil {
 				require.NoError(t, err)
 			}
-			require.Equal(t, v.expUserID, userid)
+			assert.Equal(t, v.expUserID, userid)
 		})
 	}
 }

@@ -3,7 +3,7 @@ package cryptandsign
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/assert"
 )
 
 const (
@@ -13,5 +13,5 @@ const (
 
 func TestGetPassHash(t *testing.T) {
 	res := GetPassHash(password)
-	require.Equal(t, hashPass, res)
+	assert.Equal(t, hashPass, res)
 }

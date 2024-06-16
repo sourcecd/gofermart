@@ -15,6 +15,7 @@ import (
 	"github.com/sourcecd/gofermart/internal/models"
 	"github.com/sourcecd/gofermart/internal/retr"
 	"github.com/sourcecd/gofermart/internal/storage/mock"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -54,12 +55,12 @@ func TestRegisterUser(t *testing.T) {
 	b, err := io.ReadAll(res.Body)
 	require.NoError(t, err)
 	defer res.Body.Close()
-	require.Len(t, b, tokenLen)
+	assert.Len(t, b, tokenLen)
 
 	//check
 	userid, err := auth.ParseJWT(string(b), h.seckey)
 	require.NoError(t, err)
-	require.Equal(t, userID, userid)
+	assert.Equal(t, userID, userid)
 }
 
 func TestAuthUser(t *testing.T) {
@@ -89,12 +90,12 @@ func TestAuthUser(t *testing.T) {
 	require.NoError(t, err)
 	defer res.Body.Close()
 	tokenTest = string(b)
-	require.Len(t, b, tokenLen)
+	assert.Len(t, b, tokenLen)
 
 	//check
 	userid, err := auth.ParseJWT(string(b), h.seckey)
 	require.NoError(t, err)
-	require.Equal(t, userID, userid)
+	assert.Equal(t, userID, userid)
 }
 
 func TestOrderRegister(t *testing.T) {
@@ -131,7 +132,7 @@ func TestOrderRegister(t *testing.T) {
 	require.NoError(t, err)
 	defer res.Body.Close()
 
-	require.Equal(t, orderNum, string(b))
+	assert.Equal(t, orderNum, string(b))
 }
 
 func TestOrdersList(t *testing.T) {
@@ -183,7 +184,7 @@ func TestOrdersList(t *testing.T) {
 	b, err := io.ReadAll(res.Body)
 	require.NoError(t, err)
 	defer res.Body.Close()
-	require.JSONEq(t, jsonExpRes, string(b))
+	assert.JSONEq(t, jsonExpRes, string(b))
 }
 
 func TestGetBalance(t *testing.T) {
@@ -228,7 +229,7 @@ func TestGetBalance(t *testing.T) {
 	require.NoError(t, err)
 	defer res.Body.Close()
 
-	require.JSONEq(t, jsonExpRes, string(b))
+	assert.JSONEq(t, jsonExpRes, string(b))
 }
 
 func TestWithdraw(t *testing.T) {
@@ -262,8 +263,8 @@ func TestWithdraw(t *testing.T) {
 	b, err := io.ReadAll(res.Body)
 	require.NoError(t, err)
 	defer res.Body.Close()
-	require.Equal(t, http.StatusOK, res.StatusCode)
-	require.Equal(t, "\n", string(b))
+	assert.Equal(t, http.StatusOK, res.StatusCode)
+	assert.Equal(t, "\n", string(b))
 }
 
 func TestWithdrawals(t *testing.T) {
@@ -306,5 +307,5 @@ func TestWithdrawals(t *testing.T) {
 	b, err := io.ReadAll(res.Body)
 	require.NoError(t, err)
 	defer res.Body.Close()
-	require.JSONEq(t, jsonAndRes, string(b))
+	assert.JSONEq(t, jsonAndRes, string(b))
 }
