@@ -426,7 +426,7 @@ func Run(ctx context.Context, config config.Config) {
 	if err := db.PopulateDB(ctx); err != nil {
 		log.Fatal(err)
 	}
-	if err := db.InitSecKey(ctx); err != nil {
+	if err := db.InitializeSecurityKey(ctx); err != nil {
 		log.Fatal(err)
 	}
 	seckey, err := db.GetSecKey(ctx)

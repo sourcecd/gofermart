@@ -8,7 +8,7 @@ import (
 
 type Store interface {
 	PopulateDB(ctx context.Context) error
-	InitSecKey(ctx context.Context) error
+	InitializeSecurityKey(ctx context.Context) error
 	GetSecKey(ctx context.Context) (string, error)
 	RegisterUser(ctx context.Context, reg *models.User) (int64, error)
 	AuthUser(ctx context.Context, reg *models.User) (int64, error)

@@ -85,7 +85,7 @@ func (pg *PgDB) PopulateDB(ctx context.Context) error {
 	return tx.Commit()
 }
 
-func (pg *PgDB) InitSecKey(ctx context.Context) error {
+func (pg *PgDB) InitializeSecurityKey(ctx context.Context) error {
 	var count int64
 	row := pg.db.QueryRowContext(ctx, checkSecurityKey)
 	if err := row.Scan(&count); err != nil {

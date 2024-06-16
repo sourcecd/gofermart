@@ -121,18 +121,18 @@ func (mr *MockStoreMockRecorder) GetSecKey(ctx interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSecKey", reflect.TypeOf((*MockStore)(nil).GetSecKey), ctx)
 }
 
-// InitSecKey mocks base method.
-func (m *MockStore) InitSecKey(ctx context.Context) error {
+// InitializeSecurityKey mocks base method.
+func (m *MockStore) InitializeSecurityKey(ctx context.Context) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "InitSecKey", ctx)
+	ret := m.ctrl.Call(m, "InitializeSecurityKey", ctx)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// InitSecKey indicates an expected call of InitSecKey.
-func (mr *MockStoreMockRecorder) InitSecKey(ctx interface{}) *gomock.Call {
+// InitializeSecurityKey indicates an expected call of InitializeSecurityKey.
+func (mr *MockStoreMockRecorder) InitializeSecurityKey(ctx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InitSecKey", reflect.TypeOf((*MockStore)(nil).InitSecKey), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InitializeSecurityKey", reflect.TypeOf((*MockStore)(nil).InitializeSecurityKey), ctx)
 }
 
 // ListOrders mocks base method.
