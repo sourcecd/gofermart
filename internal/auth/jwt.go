@@ -29,7 +29,7 @@ func GenerateJWT(userID int64, secKey string) (string, error) {
 	return tokenString, nil
 }
 
-func ExtractJWT(tokenString string, secKey string) (int64, error) {
+func ParseJWT(tokenString string, secKey string) (int64, error) {
 	claims := &Claims{}
 	token, err := jwt.ParseWithClaims(tokenString, claims,
 		func(t *jwt.Token) (interface{}, error) {

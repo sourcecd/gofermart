@@ -57,7 +57,7 @@ func TestRegisterUser(t *testing.T) {
 	require.Len(t, b, tokenLen)
 
 	//check
-	userid, err := auth.ExtractJWT(string(b), h.seckey)
+	userid, err := auth.ParseJWT(string(b), h.seckey)
 	require.NoError(t, err)
 	require.Equal(t, userID, userid)
 }
@@ -92,7 +92,7 @@ func TestAuthUser(t *testing.T) {
 	require.Len(t, b, tokenLen)
 
 	//check
-	userid, err := auth.ExtractJWT(string(b), h.seckey)
+	userid, err := auth.ParseJWT(string(b), h.seckey)
 	require.NoError(t, err)
 	require.Equal(t, userID, userid)
 }

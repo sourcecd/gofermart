@@ -169,7 +169,7 @@ func (h *handlers) orderRegister() http.HandlerFunc {
 			http.Error(w, "401 Unauthorized", http.StatusUnauthorized)
 			return
 		}
-		userid, err := auth.ExtractJWT(gettoken, h.seckey)
+		userid, err := auth.ParseJWT(gettoken, h.seckey)
 		if err != nil {
 			http.Error(w, "401 Unauthorized", http.StatusUnauthorized)
 			return
@@ -215,7 +215,7 @@ func (h *handlers) ordersList() http.HandlerFunc {
 			http.Error(w, "401 Unauthorized", http.StatusUnauthorized)
 			return
 		}
-		userid, err := auth.ExtractJWT(gettoken, h.seckey)
+		userid, err := auth.ParseJWT(gettoken, h.seckey)
 		if err != nil {
 			http.Error(w, "401 Unauthorized", http.StatusUnauthorized)
 			return
@@ -248,7 +248,7 @@ func (h *handlers) getBalance() http.HandlerFunc {
 			http.Error(w, "401 Unauthorized", http.StatusUnauthorized)
 			return
 		}
-		userid, err := auth.ExtractJWT(gettoken, h.seckey)
+		userid, err := auth.ParseJWT(gettoken, h.seckey)
 		if err != nil {
 			http.Error(w, "401 Unauthorized", http.StatusUnauthorized)
 			return
@@ -282,7 +282,7 @@ func (h *handlers) withdraw() http.HandlerFunc {
 			http.Error(w, "401 Unauthorized", http.StatusUnauthorized)
 			return
 		}
-		userid, err := auth.ExtractJWT(gettoken, h.seckey)
+		userid, err := auth.ParseJWT(gettoken, h.seckey)
 		if err != nil {
 			http.Error(w, "401 Unauthorized", http.StatusUnauthorized)
 			return
@@ -332,7 +332,7 @@ func (h *handlers) withdrawals() http.HandlerFunc {
 			http.Error(w, "401 Unauthorized", http.StatusUnauthorized)
 			return
 		}
-		userid, err := auth.ExtractJWT(gettoken, h.seckey)
+		userid, err := auth.ParseJWT(gettoken, h.seckey)
 		if err != nil {
 			http.Error(w, "401 Unauthorized", http.StatusUnauthorized)
 			return

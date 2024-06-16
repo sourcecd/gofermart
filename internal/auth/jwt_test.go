@@ -52,7 +52,7 @@ func TestExtractJWT(t *testing.T) {
 
 	for _, v := range testCases {
 		t.Run(v.name, func(t *testing.T) {
-			userid, err := ExtractJWT(v.token, secKey)
+			userid, err := ParseJWT(v.token, secKey)
 			if v.expErr != nil {
 				require.Error(t, err)
 			}
