@@ -35,32 +35,32 @@ func (m *MockStore) EXPECT() *MockStoreMockRecorder {
 	return m.recorder
 }
 
-// AccuPoll mocks base method.
-func (m *MockStore) AccuPoll(ctx context.Context, orders *[]int64) error {
+// AccrualSystemPoll mocks base method.
+func (m *MockStore) AccrualSystemPoll(ctx context.Context, orders *[]int64) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AccuPoll", ctx, orders)
+	ret := m.ctrl.Call(m, "AccrualSystemPoll", ctx, orders)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// AccuPoll indicates an expected call of AccuPoll.
-func (mr *MockStoreMockRecorder) AccuPoll(ctx, orders interface{}) *gomock.Call {
+// AccrualSystemPoll indicates an expected call of AccrualSystemPoll.
+func (mr *MockStoreMockRecorder) AccrualSystemPoll(ctx, orders interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AccuPoll", reflect.TypeOf((*MockStore)(nil).AccuPoll), ctx, orders)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AccrualSystemPoll", reflect.TypeOf((*MockStore)(nil).AccrualSystemPoll), ctx, orders)
 }
 
-// AccuSave mocks base method.
-func (m *MockStore) AccuSave(ctx context.Context, accrual []models.Accrual) error {
+// AccrualSystemSave mocks base method.
+func (m *MockStore) AccrualSystemSave(ctx context.Context, accrual []models.Accrual) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AccuSave", ctx, accrual)
+	ret := m.ctrl.Call(m, "AccrualSystemSave", ctx, accrual)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// AccuSave indicates an expected call of AccuSave.
-func (mr *MockStoreMockRecorder) AccuSave(ctx, accrual interface{}) *gomock.Call {
+// AccrualSystemSave indicates an expected call of AccrualSystemSave.
+func (mr *MockStoreMockRecorder) AccrualSystemSave(ctx, accrual interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AccuSave", reflect.TypeOf((*MockStore)(nil).AccuSave), ctx, accrual)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AccrualSystemSave", reflect.TypeOf((*MockStore)(nil).AccrualSystemSave), ctx, accrual)
 }
 
 // AuthUser mocks base method.

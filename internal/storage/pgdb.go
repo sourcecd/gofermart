@@ -47,9 +47,9 @@ var (
 
 	getWithdrawals = "SELECT number, sum, processed_at FROM orders WHERE (userid=$1 AND processable=false) ORDER BY processed_at DESC"
 
-	accuPollReq = "SELECT number FROM orders WHERE (processable=true AND processed=false)"
-	accuUpdate  = "UPDATE orders SET status=$1, accrual=$2, processed=$3 WHERE number=$4"
-	accuBalance = "INSERT INTO balance (userid, current, withdrawn) VALUES ($2, $1, 0) ON CONFLICT (userid) DO UPDATE SET current=(balance.current + $1)"
+	accrualPollReq = "SELECT number FROM orders WHERE (processable=true AND processed=false)"
+	accrualUpdate  = "UPDATE orders SET status=$1, accrual=$2, processed=$3 WHERE number=$4"
+	accrualBalance = "INSERT INTO balance (userid, current, withdrawn) VALUES ($2, $1, 0) ON CONFLICT (userid) DO UPDATE SET current=(balance.current + $1)"
 )
 
 func NewDB(dsn string) (*PgDB, error) {
@@ -287,9 +287,9 @@ func (pg *PgDB) Withdrawals(ctx context.Context, userid int64, withdrawals *[]mo
 	return nil
 }
 
-func (pg *PgDB) AccuPoll(ctx context.Context, orders *[]int64) error {
+func (pg *PgDB) AccrualSystemPoll(ctx context.Context, orders *[]int64) error {
 	var number int64
-	rows, err := pg.db.QueryContext(ctx, accuPollReq)
+	rows, err := pg.db.QueryContext(ctx, accrualPollReq)
 	if err != nil {
 		return err
 	}
@@ -307,7 +307,7 @@ func (pg *PgDB) AccuPoll(ctx context.Context, orders *[]int64) error {
 	return nil
 }
 
-func (pg *PgDB) AccuSave(ctx context.Context, accrual []models.Accrual) error {
+func (pg *PgDB) AccrualSystemSave(ctx context.Context, accrual []models.Accrual) error {
 	tx, err := pg.db.Begin()
 	if err != nil {
 		return err
@@ -322,25 +322,25 @@ func (pg *PgDB) AccuSave(ctx context.Context, accrual []models.Accrual) error {
 		switch v.Status {
 		case "PROCESSED":
 			var userid int64
-			if _, err := tx.ExecContext(ctx, accuUpdate, v.Status, v.Accrual, true, num); err != nil {
+			if _, err := tx.ExecContext(ctx, accrualUpdate, v.Status, v.Accrual, true, num); err != nil {
 				return err
 			}
 			if err := pg.db.QueryRowContext(ctx, checkOrderRec, num).Scan(&userid); err != nil {
 				return err
 			}
-			if _, err := tx.ExecContext(ctx, accuBalance, v.Accrual, userid); err != nil {
+			if _, err := tx.ExecContext(ctx, accrualBalance, v.Accrual, userid); err != nil {
 				return err
 			}
 		case "PROCESSING":
-			if _, err := tx.ExecContext(ctx, accuUpdate, v.Status, v.Accrual, false, num); err != nil {
+			if _, err := tx.ExecContext(ctx, accrualUpdate, v.Status, v.Accrual, false, num); err != nil {
 				return err
 			}
 		case "INVALID":
-			if _, err := tx.ExecContext(ctx, accuUpdate, v.Status, v.Accrual, true, num); err != nil {
+			if _, err := tx.ExecContext(ctx, accrualUpdate, v.Status, v.Accrual, true, num); err != nil {
 				return err
 			}
 		case "REGISTERED":
-			if _, err := tx.ExecContext(ctx, accuUpdate, v.Status, v.Accrual, false, num); err != nil {
+			if _, err := tx.ExecContext(ctx, accrualUpdate, v.Status, v.Accrual, false, num); err != nil {
 				return err
 			}
 		}

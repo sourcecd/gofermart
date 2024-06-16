@@ -17,6 +17,6 @@ type Store interface {
 	GetBalance(ctx context.Context, userid int64, balance *models.Balance) error
 	Withdraw(ctx context.Context, userid int64, withdraw *models.Withdraw) error
 	Withdrawals(ctx context.Context, userid int64, withdrawals *[]models.Withdrawals) error
-	AccuPoll(ctx context.Context, orders *[]int64) error
-	AccuSave(ctx context.Context, accrual []models.Accrual) error
+	AccrualSystemPoll(ctx context.Context, orders *[]int64) error
+	AccrualSystemSave(ctx context.Context, accrual []models.Accrual) error
 }

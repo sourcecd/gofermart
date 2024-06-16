@@ -372,12 +372,12 @@ func webRouter(h *handlers) *chi.Mux {
 	return mux
 }
 
-func accuPoll(ctx context.Context, db *storage.PgDB, srv string) error {
+func accrualSystemPoll(ctx context.Context, db *storage.PgDB, srv string) error {
 	cl := resty.New().R()
 	var orders []int64
 	var listParsedOrders []models.Accrual
 
-	if err := db.AccuPoll(ctx, &orders); err != nil {
+	if err := db.AccrualSystemPoll(ctx, &orders); err != nil {
 		return err
 	}
 
@@ -410,7 +410,7 @@ func accuPoll(ctx context.Context, db *storage.PgDB, srv string) error {
 		}
 		listParsedOrders = append(listParsedOrders, parsedOrders)
 	}
-	if err := db.AccuSave(ctx, listParsedOrders); err != nil {
+	if err := db.AccrualSystemSave(ctx, listParsedOrders); err != nil {
 		return err
 	}
 	return nil
@@ -470,8 +470,8 @@ func Run(ctx context.Context, config config.Config) {
 				return nil
 			default:
 			}
-			if config.Accu != "" {
-				if err := accuPoll(ctx, db, config.Accu); err != nil {
+			if config.AccrualSystemAddress != "" {
+				if err := accrualSystemPoll(ctx, db, config.AccrualSystemAddress); err != nil {
 					slog.Error(err.Error())
 				}
 			} else {

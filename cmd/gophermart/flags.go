@@ -23,7 +23,7 @@ func SetEnvironmentVariables(config *config.Config) {
 	}
 	if r != "" {
 		if len(strings.Split(r, ":")) >= 2 {
-			config.Accu = r
+			config.AccrualSystemAddress = r
 		}
 	}
 }
@@ -31,6 +31,6 @@ func SetEnvironmentVariables(config *config.Config) {
 func SetCmdlineFlags(config *config.Config) {
 	flag.StringVar(&config.ServerAddr, "a", "localhost:8080", "Server bind addres and port")
 	flag.StringVar(&config.DatabaseDsn, "d", "host=localhost database=gofermart sslmode=disable", "pg db connect address")
-	flag.StringVar(&config.Accu, "r", "", "accu server")
+	flag.StringVar(&config.AccrualSystemAddress, "r", "", "accrual server")
 	flag.Parse()
 }
