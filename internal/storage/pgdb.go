@@ -92,7 +92,7 @@ func (pg *PgDB) InitSecKey(ctx context.Context) error {
 		return err
 	}
 	if count == 0 {
-		seckey, err := cryptandsign.GenRandKey()
+		seckey, err := cryptandsign.GenerateRandomKey()
 		if err != nil {
 			return err
 		}

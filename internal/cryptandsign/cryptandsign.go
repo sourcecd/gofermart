@@ -6,7 +6,7 @@ import (
 	"encoding/hex"
 )
 
-func GenRandKey() (string, error) {
+func GenerateRandomKey() (string, error) {
 	key := make([]byte, 32)
 	if _, err := rand.Read(key); err != nil {
 		return "", err
