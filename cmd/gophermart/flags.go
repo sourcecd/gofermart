@@ -2,8 +2,10 @@ package main
 
 import (
 	"flag"
+	"log"
+	"net"
+	"net/url"
 	"os"
-	"strings"
 
 	"github.com/sourcecd/gofermart/internal/config"
 )
@@ -14,17 +16,19 @@ func SetEnvironmentVariables(config *config.Config) {
 	r := os.Getenv("ACCRUAL_SYSTEM_ADDRESS")
 
 	if a != "" {
-		if len(strings.Split(a, ":")) == 2 {
-			config.ServerAddr = a
+		if _, _, err := net.SplitHostPort(a); err != nil {
+			log.Fatal("wrong server listen address")
 		}
+		config.ServerAddr = a
 	}
 	if d != "" {
 		config.DatabaseDsn = d
 	}
 	if r != "" {
-		if len(strings.Split(r, ":")) >= 2 {
-			config.AccrualSystemAddress = r
+		if parsedUrl, err := url.ParseRequestURI(r); err != nil || parsedUrl.Scheme == "" || parsedUrl.Host == "" {
+			log.Fatal("wrong accrual system address")
 		}
+		config.AccrualSystemAddress = r
 	}
 }
 
