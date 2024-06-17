@@ -15,7 +15,7 @@ func GenerateRandomKey() (string, error) {
 	return encodedKey, nil
 }
 
-func GetPassHash(password string) string {
+func GeneratePasswordHash(password string) string {
 	h := sha256.New()
 	h.Write([]byte(password))
 	dst := h.Sum(nil)

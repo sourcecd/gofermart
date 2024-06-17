@@ -12,6 +12,6 @@ const (
 )
 
 func TestGetPassHash(t *testing.T) {
-	res := GetPassHash(password)
+	res := GeneratePasswordHash(password)
 	assert.Equal(t, hashPass, res)
 }
