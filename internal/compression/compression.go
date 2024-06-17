@@ -4,10 +4,11 @@ import (
 	"compress/gzip"
 	"io"
 	"net/http"
+	"slices"
 	"strings"
 )
 
-const allowedCompressTypes = "text/html application/json"
+var allowedCompressTypes = []string{"text/html", "application/json"}
 
 type compressWriter struct {
 	w  http.ResponseWriter
@@ -74,7 +75,7 @@ func GzipCompressDecompress(h http.HandlerFunc) http.HandlerFunc {
 
 		acceptEncoding := r.Header.Get("Accept-Encoding")
 		if contentType := r.Header.Get("Content-Type"); contentType != "" {
-			supportsContentType = strings.Contains(allowedCompressTypes, contentType)
+			supportsContentType = slices.Contains(allowedCompressTypes, contentType)
 		}
 		supportsGzip := strings.Contains(acceptEncoding, "gzip")
 		if supportsGzip && (r.Method == http.MethodGet || supportsContentType) {
