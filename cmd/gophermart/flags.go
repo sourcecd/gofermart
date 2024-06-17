@@ -25,7 +25,7 @@ func SetEnvironmentVariables(config *config.Config) {
 		config.DatabaseDsn = d
 	}
 	if r != "" {
-		if parsedUrl, err := url.ParseRequestURI(r); err != nil || parsedUrl.Scheme == "" || parsedUrl.Host == "" {
+		if parsedURL, err := url.ParseRequestURI(r); err != nil || parsedURL.Scheme == "" || parsedURL.Host == "" {
 			log.Fatal("wrong accrual system address")
 		}
 		config.AccrualSystemAddress = r
