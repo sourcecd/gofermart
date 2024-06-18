@@ -13,6 +13,11 @@ import (
 
 const interruptAfter = 30
 
+func loadConfiguration(config *config.Config) {
+	SetCmdlineFlags(config)
+	SetEnvironmentVariables(config)
+}
+
 func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
@@ -23,9 +28,7 @@ func main() {
 	})
 
 	var config config.Config
-
-	SetCmdlineFlags(&config)
-	SetEnvironmentVariables(&config)
+	loadConfiguration(&config)
 
 	server.Run(ctx, config)
 }
