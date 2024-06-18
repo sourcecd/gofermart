@@ -62,7 +62,7 @@ func NewDB(dsn string) (*PgDB, error) {
 	}, nil
 }
 
-func (pg *PgDB) PopulateDB(ctx context.Context) error {
+func (pg *PgDB) CreateDatabaseScheme(ctx context.Context) error {
 	tx, err := pg.db.Begin()
 	if err != nil {
 		return err
@@ -104,7 +104,7 @@ func (pg *PgDB) InitializeSecurityKey(ctx context.Context) error {
 	return nil
 }
 
-func (pg *PgDB) GetSecKey(ctx context.Context) (string, error) {
+func (pg *PgDB) GetSecurityKey(ctx context.Context) (string, error) {
 	var seckey string
 	row := pg.db.QueryRowContext(ctx, getSecurityKey)
 	if err := row.Scan(&seckey); err != nil {

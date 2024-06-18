@@ -78,6 +78,20 @@ func (mr *MockStoreMockRecorder) AuthUser(ctx, reg interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AuthUser", reflect.TypeOf((*MockStore)(nil).AuthUser), ctx, reg)
 }
 
+// CreateDatabaseScheme mocks base method.
+func (m *MockStore) CreateDatabaseScheme(ctx context.Context) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateDatabaseScheme", ctx)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateDatabaseScheme indicates an expected call of CreateDatabaseScheme.
+func (mr *MockStoreMockRecorder) CreateDatabaseScheme(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateDatabaseScheme", reflect.TypeOf((*MockStore)(nil).CreateDatabaseScheme), ctx)
+}
+
 // CreateOrder mocks base method.
 func (m *MockStore) CreateOrder(ctx context.Context, userid, orderid int64) error {
 	m.ctrl.T.Helper()
@@ -106,19 +120,19 @@ func (mr *MockStoreMockRecorder) GetBalance(ctx, userid, balance interface{}) *g
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBalance", reflect.TypeOf((*MockStore)(nil).GetBalance), ctx, userid, balance)
 }
 
-// GetSecKey mocks base method.
-func (m *MockStore) GetSecKey(ctx context.Context) (string, error) {
+// GetSecurityKey mocks base method.
+func (m *MockStore) GetSecurityKey(ctx context.Context) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetSecKey", ctx)
+	ret := m.ctrl.Call(m, "GetSecurityKey", ctx)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetSecKey indicates an expected call of GetSecKey.
-func (mr *MockStoreMockRecorder) GetSecKey(ctx interface{}) *gomock.Call {
+// GetSecurityKey indicates an expected call of GetSecurityKey.
+func (mr *MockStoreMockRecorder) GetSecurityKey(ctx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSecKey", reflect.TypeOf((*MockStore)(nil).GetSecKey), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSecurityKey", reflect.TypeOf((*MockStore)(nil).GetSecurityKey), ctx)
 }
 
 // InitializeSecurityKey mocks base method.
@@ -147,20 +161,6 @@ func (m *MockStore) ListOrders(ctx context.Context, userid int64, orderList *[]m
 func (mr *MockStoreMockRecorder) ListOrders(ctx, userid, orderList interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListOrders", reflect.TypeOf((*MockStore)(nil).ListOrders), ctx, userid, orderList)
-}
-
-// PopulateDB mocks base method.
-func (m *MockStore) PopulateDB(ctx context.Context) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "PopulateDB", ctx)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// PopulateDB indicates an expected call of PopulateDB.
-func (mr *MockStoreMockRecorder) PopulateDB(ctx interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PopulateDB", reflect.TypeOf((*MockStore)(nil).PopulateDB), ctx)
 }
 
 // RegisterUser mocks base method.

@@ -423,13 +423,13 @@ func Run(ctx context.Context, config config.Config) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if err := db.PopulateDB(ctx); err != nil {
+	if err := db.CreateDatabaseScheme(ctx); err != nil {
 		log.Fatal(err)
 	}
 	if err := db.InitializeSecurityKey(ctx); err != nil {
 		log.Fatal(err)
 	}
-	seckey, err := db.GetSecKey(ctx)
+	seckey, err := db.GetSecurityKey(ctx)
 	if err != nil {
 		log.Fatal(err)
 	}

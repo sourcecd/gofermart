@@ -24,7 +24,7 @@ func TestGenerateJWT(t *testing.T) {
 	testToken = token
 }
 
-func TestExtractJWT(t *testing.T) {
+func TestParseJWT(t *testing.T) {
 	testCases := []struct {
 		name      string
 		token     string
