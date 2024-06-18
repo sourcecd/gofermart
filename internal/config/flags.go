@@ -1,4 +1,4 @@
-package main
+package config
 
 import (
 	"flag"
@@ -6,11 +6,9 @@ import (
 	"net"
 	"net/url"
 	"os"
-
-	"github.com/sourcecd/gofermart/internal/config"
 )
 
-func SetEnvironmentVariables(config *config.Config) {
+func SetEnvironmentVariables(config *Config) {
 	a := os.Getenv("RUN_ADDRESS")
 	d := os.Getenv("DATABASE_URI")
 	r := os.Getenv("ACCRUAL_SYSTEM_ADDRESS")
@@ -32,7 +30,7 @@ func SetEnvironmentVariables(config *config.Config) {
 	}
 }
 
-func SetCmdlineFlags(config *config.Config) {
+func SetCmdlineFlags(config *Config) {
 	flag.StringVar(&config.ServerAddr, "a", "localhost:8080", "Server bind addres and port")
 	flag.StringVar(&config.DatabaseDsn, "d", "host=localhost database=gofermart sslmode=disable", "pg db connect address")
 	flag.StringVar(&config.AccrualSystemAddress, "r", "", "accrual server")

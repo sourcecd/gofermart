@@ -13,9 +13,9 @@ import (
 
 const interruptAfter = 30
 
-func loadConfiguration(config *config.Config) {
-	SetCmdlineFlags(config)
-	SetEnvironmentVariables(config)
+func loadConfiguration(cfg *config.Config) {
+	config.SetCmdlineFlags(cfg)
+	config.SetEnvironmentVariables(cfg)
 }
 
 func main() {
@@ -27,8 +27,8 @@ func main() {
 		log.Fatal("Interrupted by shutdown time exeeded!!!")
 	})
 
-	var config config.Config
-	loadConfiguration(&config)
+	var cfg config.Config
+	loadConfiguration(&cfg)
 
-	server.Run(ctx, config)
+	server.Run(ctx, cfg)
 }
