@@ -39,7 +39,7 @@ type handlers struct {
 	ctx    context.Context
 	seckey string
 	db     storage.Store
-	retry    *retry.Retry
+	retry  *retry.Retry
 }
 
 func checkRequestCreds(r *http.Request) (string, error) {
@@ -441,7 +441,7 @@ func Run(ctx context.Context, config config.Config) {
 		ctx:    ctx,
 		seckey: seckey,
 		db:     db,
-		retry:    retry,
+		retry:  retry,
 	}
 
 	srv := http.Server{
