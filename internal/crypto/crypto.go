@@ -1,4 +1,4 @@
-package cryptandsign
+package crypto
 
 import (
 	"crypto/rand"

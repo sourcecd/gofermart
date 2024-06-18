@@ -12,7 +12,7 @@ import (
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
 	_ "github.com/jackc/pgx/v5/stdlib"
-	"github.com/sourcecd/gofermart/internal/cryptandsign"
+	"github.com/sourcecd/gofermart/internal/crypto"
 	"github.com/sourcecd/gofermart/internal/models"
 	"github.com/sourcecd/gofermart/internal/prjerrors"
 )
@@ -92,7 +92,7 @@ func (pg *PgDB) InitializeSecurityKey(ctx context.Context) error {
 		return err
 	}
 	if count == 0 {
-		seckey, err := cryptandsign.GenerateRandomKey()
+		seckey, err := crypto.GenerateRandomKey()
 		if err != nil {
 			return err
 		}
@@ -116,7 +116,7 @@ func (pg *PgDB) GetSecurityKey(ctx context.Context) (string, error) {
 
 func (pg *PgDB) RegisterUser(ctx context.Context, reg *models.User) (int64, error) {
 	var id int64
-	err := pg.db.QueryRowContext(ctx, createUserRec, reg.Login, cryptandsign.GeneratePasswordHash(reg.Password)).Scan(&id)
+	err := pg.db.QueryRowContext(ctx, createUserRec, reg.Login, crypto.GeneratePasswordHash(reg.Password)).Scan(&id)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgerrcode.IsIntegrityConstraintViolation(pgErr.Code) {
@@ -140,7 +140,7 @@ func (pg *PgDB) AuthUser(ctx context.Context, reg *models.User) (int64, error) {
 		}
 		return -1, err
 	}
-	if cryptandsign.GeneratePasswordHash(reg.Password) == password {
+	if crypto.GeneratePasswordHash(reg.Password) == password {
 		return id, nil
 	}
 	return -1, prjerrors.ErrNotExists
