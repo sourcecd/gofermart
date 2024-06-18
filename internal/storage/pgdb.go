@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"database/sql"
+	"embed"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -12,6 +13,7 @@ import (
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/pressly/goose/v3"
 	"github.com/sourcecd/gofermart/internal/crypto"
 	"github.com/sourcecd/gofermart/internal/models"
 	"github.com/sourcecd/gofermart/internal/prjerrors"
@@ -21,26 +23,24 @@ type PgDB struct {
 	db *sql.DB
 }
 
-var (
-	createSecureTable = "CREATE TABLE IF NOT EXISTS security (id BIGSERIAL PRIMARY KEY, seckey VARCHAR(255))"
-	checkSecurityKey  = "SELECT COUNT (id) FROM security"
-	createSecureKey   = "INSERT INTO security (seckey) VALUES ($1)"
-	getSecurityKey    = "SELECT seckey FROM security"
+//go:embed migrations/*.sql
+var embedMigrations embed.FS
 
-	createUserTable = "CREATE TABLE IF NOT EXISTS users (id BIGSERIAL, login VARCHAR(255) PRIMARY KEY, password VARCHAR(255))"
-	createUserRec   = "INSERT INTO users (login, password) VALUES ($1, $2) RETURNING id"
+const (
+	checkSecurityKey = "SELECT COUNT (id) FROM security"
+	createSecureKey  = "INSERT INTO security (seckey) VALUES ($1)"
+	getSecurityKey   = "SELECT seckey FROM security"
+
+	createUserRec = "INSERT INTO users (login, password) VALUES ($1, $2) RETURNING id"
 
 	getUserRec = "SELECT id, login, password FROM users WHERE login=$1"
 
-	createOrdersTable = "CREATE TABLE IF NOT EXISTS orders (userid BIGINT, number BIGINT PRIMARY KEY, uploaded_at TIMESTAMPTZ, status VARCHAR(255), accrual DOUBLE PRECISION, sum DOUBLE PRECISION, processed_at TIMESTAMPTZ, processable bool, processed bool)"
-	createOrderRec    = "INSERT INTO orders (userid, number, uploaded_at, processable, processed, status) VALUES ($1, $2, $3, $4, $5, 'NEW')"
-	checkOrderRec     = "SELECT userid FROM orders WHERE number=$1"
+	createOrderRec = "INSERT INTO orders (userid, number, uploaded_at, processable, processed, status) VALUES ($1, $2, $3, $4, $5, 'NEW')"
+	checkOrderRec  = "SELECT userid FROM orders WHERE number=$1"
 
 	listOrders = "SELECT number, uploaded_at, status, accrual FROM orders WHERE (userid=$1 AND processable=true) ORDER BY uploaded_at DESC"
 
-	//May be need use double pressision
-	createBalanceTable = "CREATE TABLE IF NOT EXISTS balance (userid BIGINT PRIMARY KEY, current DOUBLE PRECISION CHECK (current >= 0), withdrawn DOUBLE PRECISION)"
-	checkBalance       = "SELECT current, withdrawn FROM balance WHERE userid=$1"
+	checkBalance = "SELECT current, withdrawn FROM balance WHERE userid=$1"
 
 	withdrawOp             = "UPDATE balance SET current=(current - $1), withdrawn=(withdrawn + $1) WHERE userid=$2"
 	createOrderRecWithdraw = "INSERT INTO orders (userid, number, sum, processed_at, processable) VALUES ($1, $2, $3, $4, $5)"
@@ -63,26 +63,17 @@ func NewDB(dsn string) (*PgDB, error) {
 }
 
 func (pg *PgDB) CreateDatabaseScheme(ctx context.Context) error {
-	tx, err := pg.db.Begin()
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
+	goose.SetBaseFS(embedMigrations)
 
-	if _, err := tx.ExecContext(ctx, createSecureTable); err != nil {
-		return err
-	}
-	if _, err := tx.ExecContext(ctx, createUserTable); err != nil {
-		return err
-	}
-	if _, err := tx.ExecContext(ctx, createOrdersTable); err != nil {
-		return err
-	}
-	if _, err := tx.ExecContext(ctx, createBalanceTable); err != nil {
+	if err := goose.SetDialect("postgres"); err != nil {
 		return err
 	}
 
-	return tx.Commit()
+	if err := goose.UpContext(ctx, pg.db, "migrations"); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (pg *PgDB) InitializeSecurityKey(ctx context.Context) error {
