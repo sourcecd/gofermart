@@ -13,7 +13,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/sourcecd/gofermart/internal/auth"
 	"github.com/sourcecd/gofermart/internal/models"
-	"github.com/sourcecd/gofermart/internal/retr"
+	"github.com/sourcecd/gofermart/internal/retry"
 	"github.com/sourcecd/gofermart/internal/storage/mock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -43,7 +43,7 @@ func TestRegisterUser(t *testing.T) {
 		ctx:    context.Background(),
 		seckey: seckey,
 		db:     db,
-		rtr:    retr.NewRetr(),
+		retry:    retry.NewRetry(),
 	}
 
 	db.EXPECT().RegisterUser(gomock.Any(), &models.User{Login: login, Password: password}).Return(userID, nil)
@@ -77,7 +77,7 @@ func TestAuthUser(t *testing.T) {
 		ctx:    context.Background(),
 		seckey: seckey,
 		db:     db,
-		rtr:    retr.NewRetr(),
+		retry:    retry.NewRetry(),
 	}
 
 	db.EXPECT().AuthUser(gomock.Any(), &models.User{Login: login, Password: password}).Return(userID, nil)
@@ -121,7 +121,7 @@ func TestOrderRegister(t *testing.T) {
 		ctx:    context.Background(),
 		seckey: seckey,
 		db:     db,
-		rtr:    retr.NewRetr(),
+		retry:    retry.NewRetry(),
 	}
 
 	//target test handler
@@ -175,7 +175,7 @@ func TestOrdersList(t *testing.T) {
 		ctx:    context.Background(),
 		seckey: seckey,
 		db:     db,
-		rtr:    retr.NewRetr(),
+		retry:    retry.NewRetry(),
 	}
 
 	//target check handler
@@ -198,7 +198,7 @@ func TestGetBalance(t *testing.T) {
 		ctx:    context.Background(),
 		seckey: seckey,
 		db:     db,
-		rtr:    retr.NewRetr(),
+		retry:    retry.NewRetry(),
 	}
 
 	db.EXPECT().GetBalance(gomock.Any(), userID, gomock.AssignableToTypeOf(balancePtr)).DoAndReturn(
@@ -243,7 +243,7 @@ func TestWithdraw(t *testing.T) {
 		ctx:    context.Background(),
 		seckey: seckey,
 		db:     db,
-		rtr:    retr.NewRetr(),
+		retry:    retry.NewRetry(),
 	}
 
 	db.EXPECT().Withdraw(gomock.Any(), userID, &models.Withdraw{Order: "12345678903", Sum: 10.5}).Return(nil)
@@ -279,7 +279,7 @@ func TestWithdrawals(t *testing.T) {
 		ctx:    context.Background(),
 		seckey: seckey,
 		db:     db,
-		rtr:    retr.NewRetr(),
+		retry:    retry.NewRetry(),
 	}
 
 	db.EXPECT().Withdrawals(gomock.Any(), userID, gomock.AssignableToTypeOf(withdrawalsPtr)).DoAndReturn(
